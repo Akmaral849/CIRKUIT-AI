@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3FF">
+  <title>Модули — Circuit AI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap">
+    <a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></span>Circuit AI</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="index.html">Главная</a>
+      <a href="detector.html">Дефектоскоп</a>
+      <a href="tutors.html">Тьюторы</a>
+      <a href="modules.html" aria-current="page">Модули</a>
+    </nav>
+  </div></header>
+
+  <main class="wrap">
+    <div class="det-head">
+      <div>
+        <span class="eyebrow">Smart City Lab</span>
+        <h1 style="font-size: clamp(28px, 4vw, 48px); margin-top: 14px;">Модули <span class="grad-text">умного города</span></h1>
+        <p class="lead">Собери схему по шагам, проверь её дефектоскопом и разберись с тьютором, как она работает.</p>
+      </div>
+    </div>
+    <div class="mod-list" id="grid"></div>
+  </main>
+
+  <script src="modules-data.js"></script>
+  <script src="tutors.js"></script>
+  <script>
+    (function () {
+      function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+      document.getElementById('grid').innerHTML = MODULES.map(function (m) {
+        const done = loadProgress(m.id).filter(Boolean).length;
+        const pct = Math.round(done / m.steps.length * 100);
+        return '<article class="card mod-item tilt reveal" data-tilt="5">' +
+          '<span class="mod-num">Модуль ' + m.id + ' · ' + esc(m.level) + ' · ' + esc(m.time) + '</span>' +
+          '<h3>' + esc(m.title) + '</h3>' +
+          (m.city ? '<p class="muted" style="margin:0">' + esc(m.city) + '</p>' : '') +
+          '<div class="bar" aria-label="Выполнено шагов: ' + done + ' из ' + m.steps.length + '"><span style="width:' + pct + '%"></span></div>' +
+          '<span class="hint">Выполнено шагов: ' + done + ' из ' + m.steps.length + '</span>' +
+          '<div class="row"><a class="btn btn-sm" href="module.html?id=' + m.id + '">Открыть</a>' +
+          (m.aiReady ? '<a class="btn btn-ghost btn-sm" href="detector.html?module=' + m.id + '">Проверить схему</a>' : '<span class="tag">Дефектоскоп скоро</span>') +
+          '</div></article>';
+      }).join('');
+    })();
+  </script>
+  <script src="tutor-widget.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

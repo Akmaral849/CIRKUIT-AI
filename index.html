@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3FF">
+  <title>Circuit AI — ИИ-дефектоскоп и голосовой тьютор</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap">
+    <a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></span>Circuit AI</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="index.html" aria-current="page">Главная</a>
+      <a href="detector.html">Дефектоскоп</a>
+      <a href="tutors.html">Тьюторы</a>
+      <a href="modules.html">Модули</a>
+    </nav>
+  </div></header>
+
+  <main>
+    <!-- ===== Первый экран ===== -->
+    <section class="hero wrap">
+      <div class="hero-text">
+        <span class="eyebrow reveal">ИИ-платформа · Smart City Lab</span>
+        <h1 class="reveal">Собери схему —<br><span class="grad-text">ИИ найдёт ошибку</span></h1>
+        <p class="lead reveal">Наведи камеру на Arduino-схему: ИИ-дефектоскоп покажет, где ошибка, а твой тьютор голосом объяснит, как её исправить.</p>
+        <div class="hero-actions reveal">
+          <a class="btn btn-lg" href="detector.html">Проверить схему</a>
+          <button class="btn btn-lg btn-ghost" type="button" id="talkBtn">Поговорить с тьютором</button>
+        </div>
+      </div>
+
+      <div class="hero-stage" aria-hidden="true">
+        <div class="stage-ring" data-parallax="0.01"></div>
+        <img class="stage-tutor t-om float" src="assets/tutors/om/om_wave.webp" alt="" data-parallax="-0.015">
+        <img class="stage-tutor t-lumi float" src="assets/tutors/lumi/lumi_wave.webp" alt="" data-parallax="0.02">
+        <img class="stage-tutor t-dex float" src="assets/tutors/dex/dex_main.webp" alt="" data-parallax="0.035">
+        <div class="stage-badge b1 glass" data-parallax="0.05"><i class="dot bad"></i>Найдена ошибка: земля не подключена</div>
+        <div class="stage-badge b2 glass" data-parallax="-0.04"><i class="dot ok"></i>Схема собрана верно</div>
+        <div class="stage-badge b3 glass" data-parallax="0.03"><i class="wave"><span></span><span></span><span></span><span></span></i>Отвечает голосом</div>
+      </div>
+    </section>
+
+    <!-- ===== Два ИИ-инструмента ===== -->
+    <section class="wrap section">
+      <h2 class="reveal">Два ИИ-инструмента в одной платформе</h2>
+      <div class="duo">
+        <article class="card duo-card tilt reveal" data-tilt="5">
+          <div class="duo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>ИИ-дефектоскоп</h3>
+          <p class="muted">Проверяет реальную собранную схему по фото и сравнивает её с эталоном модуля.</p>
+          <ul class="ticks">
+            <li>Живая камера или загрузка фото</li>
+            <li>Ошибки отмечаются прямо на снимке</li>
+            <li>Итог считает код по доказательствам ИИ — без выдумок</li>
+            <li>История всех проверок</li>
+          </ul>
+          <a class="btn" href="detector.html">Открыть дефектоскоп</a>
+        </article>
+        <article class="card duo-card tilt reveal" data-tilt="5">
+          <div class="duo-icon pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+          <h3>Голосовой ИИ-тьютор</h3>
+          <p class="muted">Персональный наставник: слышит вопрос, отвечает голосом и знает результат твоей проверки.</p>
+          <ul class="ticks">
+            <li>Три персонажа с разными характерами</li>
+            <li>Объясняет ошибку и подсказывает, а не решает за тебя</li>
+            <li>Всегда рядом — на каждой странице</li>
+            <li>Помнит историю разговора</li>
+          </ul>
+          <a class="btn" href="tutors.html">Выбрать тьютора</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== Как это работает ===== -->
+    <section class="wrap section">
+      <h2 class="reveal">Как это работает</h2>
+      <div class="steps">
+        <div class="card step-card reveal"><span class="step-num">1</span><h3>Собери</h3><p class="muted">Выбери модуль Smart City Lab и собери схему по шагам.</p></div>
+        <div class="card step-card reveal"><span class="step-num">2</span><h3>Проверь</h3><p class="muted">Наведи камеру — дефектоскоп найдёт ошибки и покажет, где они.</p></div>
+        <div class="card step-card reveal"><span class="step-num">3</span><h3>Разберись</h3><p class="muted">Тьютор объяснит, почему так вышло и как исправить, — голосом.</p></div>
+      </div>
+    </section>
+
+    <!-- ===== Модули ===== -->
+    <section class="wrap section">
+      <div class="section-head">
+        <h2 class="reveal">Модули Smart City Lab</h2>
+        <a class="btn btn-ghost btn-sm" href="modules.html">Все модули</a>
+      </div>
+      <div class="mod-grid" id="modGrid"></div>
+    </section>
+  </main>
+
+  <footer class="footer">Circuit AI · ИИ-платформа интеллектуального сопровождения учащихся</footer>
+
+  <script src="modules-data.js"></script>
+  <script src="tutors.js"></script>
+  <script>
+    document.getElementById('modGrid').innerHTML = MODULES.map(function (m) {
+      const d = document.createElement('div'); d.textContent = m.title; const title = d.innerHTML;
+      d.textContent = (m.city || '').split(':')[0]; const city = d.innerHTML;
+      return '<a class="card mod-card tilt reveal" data-tilt="6" href="module.html?id=' + m.id + '">' +
+        '<span class="mod-num">Модуль ' + m.id + '</span><h3>' + title + '</h3><p class="muted">' + city + '</p>' +
+        '<span class="tag">' + (m.aiReady ? 'Дефектоскоп готов' : 'Скоро') + '</span></a>';
+    }).join('');
+    // Главная показывает выбранного тьютора в центре
+    (function () {
+      const t = getTutor();
+      const center = document.querySelector('.t-dex');
+      const others = TUTORS.filter(function (x) { return x.id !== t.id; });
+      center.src = tutorImg(t, 'main');
+      document.querySelector('.t-om').src = tutorImg(others[0], 'wave');
+      document.querySelector('.t-lumi').src = tutorImg(others[1], 'wave');
+    })();
+  </script>
+  <script src="tutor-widget.js"></script>
+  <script>
+    document.getElementById('talkBtn').addEventListener('click', function () { Tutor.open(); });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

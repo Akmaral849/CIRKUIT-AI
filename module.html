@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3FF">
+  <title>Модуль — Circuit AI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pages.css">
+  <link rel="stylesheet" href="module.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap">
+    <a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></span>Circuit AI</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="index.html">Главная</a>
+      <a href="detector.html">Дефектоскоп</a>
+      <a href="tutors.html">Тьюторы</a>
+      <a href="modules.html" aria-current="page">Модули</a>
+    </nav>
+  </div></header>
+
+  <main class="wrap" id="page"></main>
+
+  <script src="modules-data.js"></script>
+  <script>
+    // Какой модуль открыт: module.html?id=2. Тьютор узнаёт его через CIRCUIT_MODULE.
+    const moduleId = Number(new URLSearchParams(location.search).get('id')) || 1;
+    const m = MODULES.find(function (x) { return x.id === moduleId; }) || MODULES[0];
+    window.CIRCUIT_MODULE = m.id;
+    document.title = m.title + ' — Circuit AI';
+
+    function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    const tabs = [['code', 'Код'], ['algo', 'Алгоритм'], ['how', 'Как работает'], ['mistakes', 'Типичные ошибки'], ['quiz', 'Проверь себя'], ['video', 'Видео']];
+
+    // Алгоритм: блок-схема с ветками «Да / Нет»
+    const ARROW = '<div class="fc-arrow" aria-hidden="true"></div>';
+    function fcItem(s) {
+      if (typeof s === 'string') s = { a: s };
+      if (s.q) {
+        return '<div class="fc-decision"><div class="fc-diamond"><span>' + esc(s.q) + '</span></div><div class="fc-branches">' +
+          '<div class="fc-branch yes"><span class="fc-tag">Да</span>' + esc(s.yes) + '</div>' +
+          '<div class="fc-branch no"><span class="fc-tag">Нет</span>' + esc(s.no) + '</div></div></div>';
+      }
+      return '<div class="fc-box">' + esc(s.a) + (s.code ? '<code>' + esc(s.code) + '</code>' : '') + '</div>';
+    }
+    const setupList = Array.isArray(m.algo.setup) ? m.algo.setup : [m.algo.setup];
+    const algoHtml = '<div class="fc"><div class="fc-start">Включили Arduino</div>' + ARROW +
+      '<div class="fc-group"><div class="fc-label">setup() — один раз</div>' +
+      setupList.map(function (x) { return '<div class="fc-box">' + esc(x) + '</div>'; }).join(ARROW) + '</div>' + ARROW +
+      '<div class="fc-group loop"><div class="fc-label">loop() — повторять всегда ↻</div>' +
+      m.algo.loop.map(fcItem).join(ARROW) + '<div class="fc-back">↻ и снова с начала loop()</div></div></div>';
+
+    const tabHtml = {
+      code: '<p class="hint" style="margin-top:0">Скопируй код в Arduino IDE, выбери плату Arduino Uno и свой порт, нажми «Загрузить».</p>' +
+        '<div class="code-actions"><button class="chip" id="copyCode" type="button">Скопировать код</button></div><pre><code id="code"></code></pre>',
+      algo: algoHtml,
+      how: Array.isArray(m.how) ? '<ol class="how-steps">' + m.how.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' : '<p>' + esc(m.how) + '</p>',
+      mistakes: '<ul class="mistakes">' + m.mistakes.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>',
+      quiz: '<div class="quiz">' + m.quiz.map(function (q) { return '<details><summary>' + esc(q.q) + '</summary><p>' + esc(q.a) + '</p></details>'; }).join('') + '</div>',
+      video: m.video
+        ? '<div class="video-wrap"><iframe src="https://www.youtube.com/embed/' + esc(m.video) + '" title="Видеоурок" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>'
+        : '<div class="video-box">Видеоурок скоро появится</div>'
+    };
+
+    document.getElementById('page').innerHTML =
+      '<section class="mod-hero">' +
+        '<div><span class="eyebrow">Модуль ' + m.id + ' · ' + esc(m.level) + ' · ' + esc(m.time) + '</span>' +
+        '<h1>' + esc(m.title) + '</h1>' +
+        (m.city ? '<p class="lead">' + esc(m.city) + '</p>' : '') +
+        '<div class="mod-progress"><div class="bar"><span id="doneBar"></span></div><span class="hint">Выполнено шагов: <b id="done">0</b> из ' + m.steps.length + '</span></div></div>' +
+        '<aside class="card mod-actions glass">' +
+          '<h3>Собрал? Проверь!</h3>' +
+          '<p class="muted">ИИ-дефектоскоп сравнит твою схему с эталоном этого модуля.</p>' +
+          (m.aiReady ? '<a class="btn" href="detector.html?module=' + m.id + '">Проверить схему</a>' : '<span class="tag">Дефектоскоп для модуля скоро</span>') +
+          '<button class="btn btn-ghost" type="button" id="askTutor">Спросить тьютора</button>' +
+        '</aside>' +
+      '</section>' +
+      '<div class="mod-cols">' +
+        '<section class="card"><h2 class="h-sm">Цель и детали</h2><p>' + esc(m.goal) + '</p><ul class="parts">' + m.parts.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul></section>' +
+        '<section class="card scheme"><h2 class="h-sm">Схема</h2>' + (m.scheme ? '<img src="images/' + esc(m.scheme) + '" alt="Схема модуля ' + esc(m.title) + '" onerror="this.outerHTML=\'<div class=&quot;video-box&quot;>Схема скоро появится</div>\'">' : '<div class="video-box">Схема скоро появится</div>') + '</section>' +
+      '</div>' +
+      '<section class="card"><h2 class="h-sm">Шаги сборки</h2>' + m.steps.map(function (s, i) {
+        return '<label class="step"><input type="checkbox"><span><strong>Шаг ' + (i + 1) + '. ' + esc(s.t) + '.</strong> ' + esc(s.d) + '</span></label>';
+      }).join('') + '</section>' +
+      '<section class="card"><div class="tabs" role="tablist">' + tabs.map(function (t) {
+        return '<button class="tab" role="tab" type="button" data-tab="' + t[0] + '">' + t[1] + '</button>';
+      }).join('') + '</div>' + tabs.map(function (t) {
+        return '<div class="tab-panel" role="tabpanel" data-panel="' + t[0] + '">' + tabHtml[t[0]] + '</div>';
+      }).join('') + '</section>';
+
+    // Вкладки
+    const tabButtons = document.querySelectorAll('.tab');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    function selectTab(id) {
+      tabButtons.forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === id); });
+      tabPanels.forEach(function (p) { p.hidden = p.dataset.panel !== id; });
+    }
+    tabButtons.forEach(function (b) { b.addEventListener('click', function () { selectTab(b.dataset.tab); }); });
+    selectTab('code');
+    document.getElementById('code').textContent = m.code;
+    document.getElementById('copyCode').addEventListener('click', function () {
+      const btn = this;
+      navigator.clipboard.writeText(m.code).then(function () {
+        btn.textContent = 'Скопировано';
+        setTimeout(function () { btn.textContent = 'Скопировать код'; }, 1500);
+      });
+    });
+
+    // Прогресс шагов
+    const boxes = document.querySelectorAll('.step input');
+    const saved = loadProgress(m.id);
+    function showProgress() {
+      const flags = Array.from(boxes).map(function (b) { return b.checked; });
+      const n = flags.filter(Boolean).length;
+      document.getElementById('done').textContent = n;
+      document.getElementById('doneBar').style.width = Math.round(n / m.steps.length * 100) + '%';
+      return flags;
+    }
+    boxes.forEach(function (b, i) {
+      b.checked = !!saved[i];
+      b.addEventListener('change', function () { saveProgress(m.id, showProgress()); });
+    });
+    showProgress();
+  </script>
+  <script src="tutors.js"></script>
+  <script src="tutor-widget.js"></script>
+  <script>
+    document.getElementById('askTutor').addEventListener('click', function () { Tutor.open(); });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+/* Circuit AI 2.0 — стили страниц: главная, дефектоскоп, тьюторы, модули. */
+
+.section { margin-top: 96px; }
+.section > h2 { margin-bottom: 28px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+
+/* ---------- Главная: первый экран ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 32px; align-items: center; min-height: calc(100vh - 72px); padding-top: 24px; }
+.hero-text h1 { margin-top: 18px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.hero-stage { position: relative; height: 560px; }
+.stage-ring {
+  position: absolute; inset: 40px 20px 30px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.95) 0 38%, rgba(124, 92, 255, 0.16) 39% 60%, transparent 61%);
+}
+.stage-tutor { position: absolute; bottom: 30px; height: 300px; object-fit: contain; filter: drop-shadow(0 24px 22px rgba(76, 48, 170, 0.3)); }
+.t-dex { left: 50%; margin-left: -110px; height: 420px; z-index: 3; animation-delay: -1s; }
+.t-om { left: 0; bottom: 70px; z-index: 2; animation-delay: -2s; }
+.t-lumi { right: 0; bottom: 70px; z-index: 2; animation-delay: -3s; }
+.stage-badge {
+  position: absolute; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: var(--shadow-sm); font-weight: 700; font-size: 14px;
+}
+.b1 { top: 60px; left: 0; }
+.b2 { top: 140px; right: -10px; }
+.b3 { bottom: 0; left: 30%; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 4px rgba(14, 166, 114, 0.18); }
+.dot.bad { background: var(--bad); box-shadow: 0 0 0 4px rgba(232, 51, 95, 0.18); }
+.wave { display: inline-flex; align-items: center; gap: 2px; height: 16px; }
+.wave span { width: 3px; border-radius: 2px; background: var(--grad); animation: eq 0.9s ease-in-out infinite; }
+.wave span:nth-child(1) { height: 6px; } .wave span:nth-child(2) { height: 14px; animation-delay: -0.3s; }
+.wave span:nth-child(3) { height: 10px; animation-delay: -0.6s; } .wave span:nth-child(4) { height: 16px; animation-delay: -0.2s; }
+@keyframes eq { 50% { transform: scaleY(0.4); } }
+
+/* ---------- Главная: блоки ---------- */
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.duo-card { display: flex; flex-direction: column; gap: 14px; padding: 32px; }
+.duo-card .btn { align-self: flex-start; margin-top: auto; }
+.duo-icon { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #7C5CFF, #38BDF8); }
+.duo-icon.pink { background: linear-gradient(135deg, #FF4FA3, #7C5CFF); }
+.duo-icon svg { width: 28px; height: 28px; }
+.ticks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.ticks li { padding-left: 30px; position: relative; }
+.ticks li::before { content: ""; position: absolute; left: 0; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C5CFF' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12l4 4 8-8'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.step-card { display: flex; flex-direction: column; gap: 8px; }
+.step-num { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--grad); margin-bottom: 6px; }
+.mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.mod-card { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: var(--text); padding: 22px; }
+.mod-card .tag { align-self: flex-start; margin-top: auto; }
+.mod-num { color: var(--muted); font-size: 13px; font-weight: 700; }
+
+/* ---------- Дефектоскоп ---------- */
+.det-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 32px 0 24px; }
+.det-head .lead { margin-top: 10px; }
+.mod-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.det-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.det-work { display: flex; flex-direction: column; gap: 16px; }
+.viewer {
+  position: relative; border-radius: 20px; overflow: hidden; min-height: 360px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #1E1446, #2A1D63); color: #D9D1F5;
+}
+.viewer video { display: block; width: 100%; max-height: 70vh; object-fit: contain; }
+.still { position: relative; display: inline-block; max-width: 100%; }
+.still img { display: block; max-width: 100%; max-height: 70vh; }
+.viewer-empty { padding: 40px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.viewer-empty svg { width: 54px; height: 54px; opacity: 0.8; }
+.live-badge { position: absolute; top: 14px; left: 14px; z-index: 3; display: none; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(15, 10, 36, 0.7); color: #fff; font-size: 13px; font-weight: 700; }
+.viewer.live .live-badge { display: inline-flex; }
+.live-badge::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+/* Скан-линия во время анализа */
+.scan { position: absolute; inset: 0; pointer-events: none; display: none; overflow: hidden; }
+.viewer.scanning .scan { display: block; }
+.scan::before { content: ""; position: absolute; left: 0; right: 0; height: 90px; top: -90px; background: linear-gradient(180deg, transparent, rgba(56, 189, 248, 0.35), rgba(124, 92, 255, 0.55)); border-bottom: 2px solid #9EE7FF; animation: scan 1.6s linear infinite; }
+.scan::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(158, 231, 255, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(158, 231, 255, 0.12) 1px, transparent 1px); background-size: 28px 28px; }
+@keyframes scan { to { top: 100%; } }
+/* Отметки на снимке */
+.marks { position: absolute; inset: 0; pointer-events: none; }
+.mark { position: absolute; border: 2.5px solid var(--ok); border-radius: 10px; box-shadow: 0 0 0 4px rgba(14, 166, 114, 0.18); }
+.mark span { position: absolute; left: -2px; bottom: 100%; margin-bottom: 6px; padding: 3px 9px; border-radius: 8px; white-space: nowrap; font-size: 12px; font-weight: 800; color: #fff; background: var(--ok); }
+.mark.error { border-color: var(--bad); box-shadow: 0 0 0 4px rgba(232, 51, 95, 0.22); animation: markpulse 1.4s ease-in-out infinite; }
+.mark.error span { background: var(--bad); }
+@keyframes markpulse { 50% { box-shadow: 0 0 0 10px rgba(232, 51, 95, 0.05); } }
+
+.det-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.det-actions .time { margin-left: auto; color: var(--muted); font-size: 14px; font-weight: 600; }
+.tips summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+.tips ul { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
+
+/* Этапы анализа */
+.stages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.stages li { display: flex; align-items: center; gap: 12px; color: var(--muted); font-weight: 600; font-size: 15px; }
+.stages li::before { content: ""; flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); background: #fff; }
+.stages li.active { color: var(--text); }
+.stages li.active::before { border-color: var(--accent); border-top-color: transparent; animation: spin 0.8s linear infinite; }
+.stages li.done { color: var(--text); }
+.stages li.done::before { border: 0; background: var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12l4 4 8-8'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.stages li.fail::before { border: 0; background: var(--bad); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Итог */
+.verdict { display: flex; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 18px; font-weight: 800; font-size: 18px; }
+.verdict small { display: block; font-weight: 500; font-size: 14px; color: inherit; opacity: 0.85; }
+.verdict .v-icon { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: #fff; font-size: 22px; }
+.verdict.ok { background: #E3F8EF; color: #075C40; } .verdict.ok .v-icon { background: var(--ok); }
+.verdict.warn { background: #FFF3DC; color: #6B4100; } .verdict.warn .v-icon { background: var(--warn); }
+.verdict.bad { background: #FFE5EC; color: #7A1131; } .verdict.bad .v-icon { background: var(--bad); }
+.res-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.issue { border: 1px solid #FFC7D5; background: #FFF7F9; border-radius: 16px; padding: 14px 16px; }
+.issue b { color: #7A1131; }
+.issue p { margin: 6px 0 10px; font-size: 14px; color: #4A3A50; }
+.res-group h4 { margin: 16px 0 8px; font-size: 15px; }
+.res-group ul { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); }
+.res-group label { display: flex; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.history { display: flex; flex-direction: column; gap: 8px; }
+.h-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid var(--border); background: #fff; cursor: pointer; font: inherit; text-align: left; color: var(--text); }
+.h-item:hover { border-color: var(--accent); }
+.h-item img { width: 56px; height: 42px; object-fit: cover; border-radius: 8px; }
+.h-item small { display: block; color: var(--muted); font-size: 12px; }
+.h-dot { margin-left: auto; width: 12px; height: 12px; border-radius: 50%; flex: none; }
+
+/* ---------- Выбор тьютора ---------- */
+.tutor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.tutor-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 2px solid transparent; transition: border-color 0.2s, transform 0.2s; }
+.tutor-card.selected { border-color: var(--accent); }
+.tutor-pic { height: 330px; border-radius: 20px; display: grid; place-items: end center; overflow: hidden; position: relative; }
+.tutor-pic img { height: 300px; object-fit: contain; filter: drop-shadow(0 18px 16px rgba(76, 48, 170, 0.28)); transition: transform 0.3s ease; }
+.tutor-card:hover .tutor-pic img { transform: translateY(-8px) scale(1.03); }
+.tutor-name { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tutor-name h3 { font-family: 'Unbounded', sans-serif; font-size: 26px; }
+.tutor-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tutor-card .btn { margin-top: auto; }
+.tutor-badge { position: absolute; top: 14px; right: 14px; padding: 5px 12px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; }
+
+/* ---------- Модули ---------- */
+.mod-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.mod-item { display: flex; flex-direction: column; gap: 10px; }
+.mod-item .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--grad); border-radius: 999px; }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; }
+  .hero-stage { height: 440px; }
+  .t-dex { height: 340px; margin-left: -90px; }
+  .stage-tutor { height: 230px; }
+  .duo, .steps, .tutor-grid, .det-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave span, .scan::before, .mark.error, .live-badge::before { animation: none; }
+}

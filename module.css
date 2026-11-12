@@ -1,0 +1,67 @@
+/* Circuit AI 2.0 — страница модуля (module.html). Подключается после style.css и pages.css. */
+#page { display: flex; flex-direction: column; gap: 24px; padding-top: 28px; }
+.mod-hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+.mod-hero h1 { margin-top: 14px; font-size: clamp(30px, 4.5vw, 52px); }
+.mod-progress { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; max-width: 420px; }
+.mod-progress .bar span { transition: width 0.5s cubic-bezier(.2, .7, .2, 1); }
+.mod-actions { display: flex; flex-direction: column; gap: 12px; }
+.mod-actions p { margin: 0; }
+.mod-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.h-sm { font-size: 22px; margin-bottom: 14px; }
+.parts { margin: 12px 0 0; padding-left: 20px; }
+.parts li { margin-bottom: 6px; }
+.scheme img { width: 100%; height: auto; border-radius: 14px; display: block; }
+
+/* Шаги сборки */
+.step { display: flex; gap: 12px; align-items: flex-start; padding: 14px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+.step + .step { border-top: 1px solid var(--border); }
+.step:hover { background: var(--surface-2); }
+.step:has(input:checked) { opacity: 0.55; }
+.step input { flex: none; width: 22px; height: 22px; margin-top: 3px; accent-color: var(--accent); cursor: pointer; }
+
+/* Вкладки */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.tab { padding: 9px 16px; border-radius: 12px; border: 1px solid var(--border); background: #fff; color: var(--text); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--grad); border-color: transparent; color: #fff; }
+.tab-panel:not([hidden]) { animation: fade-up 0.35s ease; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+pre { margin: 0; padding: 18px; border-radius: 16px; background: #1D1638; color: #E9E3FF; overflow-x: auto; font: 14px/1.6 Consolas, 'Courier New', monospace; }
+.code-actions { margin-bottom: 10px; }
+.mistakes { margin: 0; padding-left: 20px; }
+.mistakes li { margin-bottom: 8px; }
+.quiz details { border-bottom: 1px solid var(--border); padding: 12px 0; }
+.quiz summary { cursor: pointer; font-weight: 700; }
+.quiz details p { margin: 8px 0 0; color: var(--muted); }
+.how-steps { list-style: none; counter-reset: how; padding: 0; margin: 0; }
+.how-steps li { counter-increment: how; position: relative; padding: 0 0 18px 50px; }
+.how-steps li::before { content: counter(how); position: absolute; left: 0; top: 0; width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; background: var(--grad); }
+.video-wrap { position: relative; padding-top: 56.25%; border-radius: 16px; overflow: hidden; background: var(--surface-2); }
+.video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-box { display: grid; place-items: center; min-height: 220px; border-radius: 16px; background: var(--surface-2); color: var(--muted); border: 1px dashed var(--border); }
+
+/* Алгоритм: блок-схема */
+.fc { display: flex; flex-direction: column; align-items: center; padding: 8px 0; }
+.fc-start { padding: 10px 22px; border-radius: 999px; font-weight: 800; color: #fff; background: var(--grad); }
+.fc-arrow { width: 2px; height: 26px; background: var(--accent); position: relative; flex: none; }
+.fc-arrow::after { content: ""; position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--accent); border-bottom: 0; }
+.fc-group { width: 100%; max-width: 560px; display: flex; flex-direction: column; align-items: center; padding: 30px 16px 16px; border-radius: 18px; position: relative; border: 1px dashed var(--border); background: #FBFAFF; }
+.fc-group.loop { border-color: rgba(124, 92, 255, 0.5); background: rgba(124, 92, 255, 0.05); }
+.fc-label { position: absolute; top: -12px; left: 16px; padding: 2px 10px; border-radius: 999px; background: #fff; border: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--muted); }
+.fc-box { width: 100%; max-width: 440px; text-align: center; padding: 12px 16px; border-radius: 12px; background: #fff; border: 1px solid var(--border); font-weight: 600; }
+.fc-box code { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.fc-decision { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.fc-diamond { width: 100%; max-width: 440px; padding: 14px 28px; text-align: center; font-weight: 700; background: var(--accent-soft); border: 1px solid rgba(124, 92, 255, 0.5); clip-path: polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%); }
+.fc-branches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 500px; margin-top: 12px; }
+.fc-branch { padding: 10px 12px; border-radius: 12px; font-size: 14px; text-align: center; background: #fff; border: 1px solid var(--border); }
+.fc-branch.yes { border-color: rgba(14, 166, 114, 0.5); }
+.fc-tag { display: block; font-size: 12px; font-weight: 800; margin-bottom: 4px; }
+.fc-branch.yes .fc-tag { color: var(--ok); }
+.fc-branch.no .fc-tag { color: var(--muted); }
+.fc-back { margin-top: 14px; font-size: 13px; color: var(--accent); font-weight: 700; }
+
+@media (max-width: 860px) {
+  .mod-hero, .mod-cols { grid-template-columns: 1fr; }
+  .fc-branches { grid-template-columns: 1fr; }
+}

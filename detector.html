@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3FF">
+  <title>ИИ-дефектоскоп — Circuit AI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap">
+    <a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></span>Circuit AI</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="index.html">Главная</a>
+      <a href="detector.html" aria-current="page">Дефектоскоп</a>
+      <a href="tutors.html">Тьюторы</a>
+      <a href="modules.html">Модули</a>
+    </nav>
+  </div></header>
+
+  <main class="wrap">
+    <div class="det-head">
+      <div>
+        <span class="eyebrow">ИИ-дефектоскоп</span>
+        <h1 style="font-size: clamp(28px, 4vw, 44px); margin-top: 14px;">Проверка схемы <span class="grad-text">по фото</span></h1>
+        <p class="lead">Выбери модуль, наведи камеру на собранную схему и нажми «Проверить».</p>
+      </div>
+    </div>
+
+    <div class="mod-pick" id="modPick" role="group" aria-label="Модуль"></div>
+
+    <div class="det-grid" style="margin-top: 20px;">
+      <section class="card det-work" aria-label="Рабочая область">
+        <div class="viewer" id="viewer">
+          <span class="live-badge">Живая камера</span>
+          <video id="video" playsinline muted hidden></video>
+          <div class="still" id="still" hidden>
+            <img id="stillImg" alt="Снимок схемы">
+            <div class="marks" id="marks"></div>
+          </div>
+          <div class="viewer-empty" id="viewerEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>
+            <b>Включи камеру или загрузи фото</b>
+            <span>В кадре должны быть Arduino и вся макетная плата</span>
+          </div>
+          <div class="scan" aria-hidden="true"></div>
+        </div>
+
+        <div class="det-actions">
+          <button class="btn btn-ghost" id="camBtn" type="button">Включить камеру</button>
+          <button class="btn btn-lg" id="checkBtn" type="button" disabled>Проверить схему</button>
+          <button class="btn btn-ghost" id="liveBtn" type="button" hidden>Снова камера</button>
+          <button class="btn btn-ghost" id="uploadBtn" type="button">Загрузить фото</button>
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <span class="time" id="timeInfo" aria-live="polite"></span>
+        </div>
+
+        <details class="tips">
+          <summary>Как снять схему, чтобы ИИ всё увидел</summary>
+          <ul>
+            <li>Снимай строго сверху, телефон параллельно столу.</li>
+            <li>В кадре — Arduino и вся макетная плата, без обрезанных краёв.</li>
+            <li>Хороший свет, без бликов и тени от руки.</li>
+            <li>Провода не должны закрывать друг друга там, где их можно раздвинуть.</li>
+          </ul>
+        </details>
+      </section>
+
+      <aside style="display: flex; flex-direction: column; gap: 20px;">
+        <section class="card">
+          <h3 style="margin-bottom: 14px;">Этапы проверки</h3>
+          <ol class="stages" id="stages">
+            <li>Снимок готов</li>
+            <li>Отправка на сервер</li>
+            <li>ИИ отвечает на вопросы по фото</li>
+            <li>Сервер проверяет доказательства</li>
+            <li>Итог готов</li>
+          </ol>
+        </section>
+        <section class="card" id="resultCard" hidden aria-live="polite">
+          <div id="result"></div>
+        </section>
+        <section class="card">
+          <h3 style="margin-bottom: 12px;">История проверок</h3>
+          <div class="history" id="history"><p class="hint">Здесь появятся твои проверки.</p></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="modules-data.js"></script>
+  <script src="tutors.js"></script>
+  <script src="tutor-widget.js"></script>
+  <script src="detector.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3FF">
+  <title>Выбери тьютора — Circuit AI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <header class="topbar"><div class="wrap">
+    <a class="logo" href="index.html"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></span>Circuit AI</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="index.html">Главная</a>
+      <a href="detector.html">Дефектоскоп</a>
+      <a href="tutors.html" aria-current="page">Тьюторы</a>
+      <a href="modules.html">Модули</a>
+    </nav>
+  </div></header>
+
+  <main class="wrap">
+    <div class="det-head">
+      <div>
+        <span class="eyebrow">Голосовой ИИ-тьютор</span>
+        <h1 style="font-size: clamp(28px, 4vw, 48px); margin-top: 14px;">Выбери <span class="grad-text">своего тьютора</span></h1>
+        <p class="lead">Знания у всех одинаковые — разная манера объяснять. Тьютор будет рядом на каждой странице и ответит голосом.</p>
+      </div>
+    </div>
+    <div class="tutor-grid" id="tutorGrid"></div>
+  </main>
+
+  <script src="tutors.js"></script>
+  <script>
+    (function () {
+      const grid = document.getElementById('tutorGrid');
+      function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+      function render() {
+        const current = getTutor();
+        grid.innerHTML = '';
+        TUTORS.forEach(function (t) {
+          const card = el('article', 'card tutor-card tilt reveal' + (t.id === current.id ? ' selected' : ''));
+          card.dataset.tilt = '5';
+          const pic = el('div', 'tutor-pic');
+          pic.style.background = t.bg;
+          const img = el('img');
+          img.src = tutorImg(t, 'main');
+          img.alt = t.name;
+          pic.appendChild(img);
+          if (t.id === current.id) pic.appendChild(el('span', 'tutor-badge', 'Твой тьютор'));
+          card.appendChild(pic);
+          // при наведении машет рукой
+          card.addEventListener('pointerenter', function () { img.src = tutorImg(t, 'wave'); });
+          card.addEventListener('pointerleave', function () { img.src = tutorImg(t, 'main'); });
+
+          const head = el('div', 'tutor-name');
+          head.appendChild(el('h3', '', t.name));
+          const listen = el('button', 'chip', '▶ Послушать');
+          listen.type = 'button';
+          listen.addEventListener('click', function () {
+            tutorSpeak(t, t.sample,
+              function () { img.src = tutorImg(t, 'talk'); },
+              function () { img.src = tutorImg(t, 'main'); });
+          });
+          head.appendChild(listen);
+          card.appendChild(head);
+          card.appendChild(el('span', 'muted', t.role));
+          const tags = el('div', 'tutor-tags');
+          t.tags.forEach(function (x) { tags.appendChild(el('span', 'tag', x)); });
+          card.appendChild(tags);
+          card.appendChild(el('p', 'muted', t.about));
+          const pickBtn = el('button', 'btn', t.id === current.id ? 'Выбран' : 'Выбрать ' + (t.id === 'lumi' ? 'Люми' : t.id === 'om' ? 'Ома' : 'Декса'));
+          pickBtn.type = 'button';
+          pickBtn.disabled = t.id === current.id;
+          pickBtn.addEventListener('click', function () {
+            setTutor(t.id);
+            render();
+            if (window.Tutor) Tutor.open();
+          });
+          card.appendChild(pickBtn);
+          grid.appendChild(card);
+        });
+        grid.querySelectorAll('.reveal').forEach(function (n) { n.classList.add('in'); });
+      }
+      render();
+      window.addEventListener('tutor-change', render);
+    })();
+  </script>
+  <script src="tutor-widget.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

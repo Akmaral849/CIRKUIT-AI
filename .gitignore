@@ -1,0 +1,28 @@
+# секреты: НИКОГДА не загружать в GitHub
+.env
+server/.env
+
+# виртуальное окружение
+venv/
+server/venv/
+.venv/
+
+# мусор Python и редактора
+__pycache__/
+*.pyc
+.vscode/
+.DS_Store
+
+# личные файлы и копии: в интернет не выкладываем
+НАУЧНЫЙ ПРОЕКТ/
+backup_11-11/
+Circuit_AI_files/
+Circuit_AI_files.zip
+# оригиналы картинок тьюторов (на сайте используются сжатые .webp из assets/tutors)
+assetstutorsdex/
+assetstutorslumi/
+assetstutorsom/
+
+# файлы, которые сервер создаёт сам
+server/check_cache.json
+server/checks_log.jsonl
