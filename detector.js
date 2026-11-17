@@ -145,14 +145,13 @@
   // Фото берутся с самого сайта, без окна выбора файла. Байты не меняются,
   // поэтому сервер узнаёт их в демо-кэше и отвечает сразу, даже если Google не отвечает.
   const DEMO_PHOTOS = {
-    1: [['m1_1_01_etalon.jpg', 'Правильная сборка'], ['m1_2_06_visyachiy_provod.jpg', 'Висящий провод']],
-    2: [['m2_1_01_etalon.jpg', 'Правильная сборка']],
-    3: [['m3_1_01_etalon.jpg', 'Правильная сборка']],
-    4: [['m4_1_01_etalon.jpg', 'Правильная сборка']],
-    5: [['m5_1_01_etalon.jpg', 'Правильная сборка']],
-    6: [['m6_1_01_etalon.jpg', 'Правильная сборка'], ['m6_2_06_visyachiy_provod.jpg', 'Висящий провод'],
-        ['m6_3_07_do_ne_v_tom_pine.jpg', 'Провод не в том пине']],
-    7: [['m7_1_01_etalon.jpg', 'Правильная сборка']]
+    1: [["m1_1_01_etalon.jpg", "Правильная сборка"], ["m1_2_06_visyachiy_provod.jpg", "Висящий провод"], ["m1_3_04_net_rezistora.jpg", "Нет резистора"]],
+    2: [["m2_1_01_etalon.jpg", "Правильная сборка"], ["m2_2_06_visyachiy_provod.jpg", "Висящий провод"], ["m2_3_07_trig_echo_pereputany.jpg", "Trig и Echo перепутаны"]],
+    3: [["m3_1_01_etalon.jpg", "Правильная сборка"], ["m3_2_04_net_rezistora.jpg", "Нет резистора"]],
+    4: [["m4_1_01_etalon.jpg", "Правильная сборка"], ["m4_2_06_visyachiy_provod.jpg", "Висящий провод"], ["m4_3_02_net_gnd.jpg", "Нет GND"]],
+    5: [["m5_1_01_etalon.jpg", "Правильная сборка"]],
+    6: [["m6_1_01_etalon.jpg", "Правильная сборка"], ["m6_2_06_visyachiy_provod.jpg", "Висящий провод"], ["m6_3_07_do_ne_v_tom_pine.jpg", "Датчик огня не в том пине"]],
+    7: [["m7_1_01_etalon.jpg", "Правильная сборка"], ["m7_2_04_net_rezistora.jpg", "Нет резистора"]]
   };
   async function useDemo(file) {
     try {
@@ -389,4 +388,14 @@
 
   renderHistory();
   window.renderDemo();
+  // Список готовых фото делает скрипт server/make_maket_demo.py (demo_photos/list.json)
+  fetch('demo_photos/list.json', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (list) {
+      if (!list) return;
+      Object.keys(DEMO_PHOTOS).forEach(function (k) { delete DEMO_PHOTOS[k]; });
+      Object.keys(list).forEach(function (k) { DEMO_PHOTOS[k] = list[k]; });
+      window.renderDemo();
+    })
+    .catch(function () {});
 })();
