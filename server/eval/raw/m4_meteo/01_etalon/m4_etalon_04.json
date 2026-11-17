@@ -1,0 +1,77 @@
+{
+ "raw": {
+  "no_circuit": false,
+  "dht": {
+   "status": "yes",
+   "evidence": "The blue DHT11 sensor is visible on the breadboard.",
+   "box": [
+    280,
+    380,
+    350,
+    450
+   ]
+  },
+  "lcd": {
+   "status": "no",
+   "evidence": "The LCD 1602 is present, but it does not have the I2C backpack module attached.",
+   "box": [
+    770,
+    460,
+    920,
+    980
+   ]
+  },
+  "lcd_wires": {
+   "found": [],
+   "value": 0,
+   "evidence": "No I2C backpack is present, so no I2C wires are connected.",
+   "box": null
+  },
+  "dht_data": {
+   "value": "2",
+   "evidence": "The data pin of the DHT11 connects to a green wire leading to pin 2 on the Arduino.",
+   "box": [
+    300,
+    380,
+    650,
+    550
+   ]
+  },
+  "sda": {
+   "value": null,
+   "evidence": "No I2C module present.",
+   "box": null
+  },
+  "scl": {
+   "value": null,
+   "evidence": "No I2C module present.",
+   "box": null
+  },
+  "power_wires": [
+   {
+    "socket": "5V",
+    "color": "красный"
+   },
+   {
+    "socket": "GND",
+    "color": "черный"
+   }
+  ],
+  "gnd_other_end": {
+   "status": "rail",
+   "evidence": "The GND wire from the Arduino connects to the negative power rail on the breadboard.",
+   "box": [
+    450,
+    450,
+    600,
+    550
+   ]
+  },
+  "hanging_wires": []
+ },
+ "model": "gemini-3.1-flash-lite",
+ "seconds": 9.9,
+ "error": null,
+ "prompt": "5159a0420d8f",
+ "time": "2026-11-16T17:13:44"
+}

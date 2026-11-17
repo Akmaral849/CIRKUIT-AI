@@ -28,7 +28,18 @@
       </div>
     </div>
     <div class="tutor-grid" id="tutorGrid"></div>
+    <section id="voiceTuner" class="voice-tuner"></section>
   </main>
+  <style>
+    .voice-tuner { margin: 48px 0 64px; }
+    .voice-tuner h2 { margin-bottom: 8px; }
+    .vt-card { padding: 20px; margin-top: 16px; display: grid; gap: 12px; }
+    .vt-select { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font: inherit; }
+    .vt-row { display: grid; gap: 4px; }
+    .vt-row input { width: 100%; }
+    .vt-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    .voice-tuner > .btn { margin-top: 20px; }
+  </style>
 
   <script src="tutors.js"></script>
   <script>
@@ -85,6 +96,7 @@
       render();
       window.addEventListener('tutor-change', render);
     })();
+    mountVoiceTuner(document.getElementById('voiceTuner'));
   </script>
   <script src="tutor-widget.js"></script>
   <script src="script.js"></script>

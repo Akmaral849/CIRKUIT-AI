@@ -8,6 +8,16 @@
 
   // Подсказки «как исправить» по типу ошибки
   const TIPS = [
+    [['пины', 'гнезд'], 'Сравни, в какие гнёзда Arduino воткнуты провода, со схемой модуля. Скорее всего, один провод стоит в соседнем гнезде — переставь его.'],
+    [['trig', 'echo'], 'Trig идёт в пин 9, Echo — в пин 10. Если их перепутать, датчик всё время показывает 999.'],
+    [['сервопривод', 'серво'], 'Оранжевый (сигнальный) провод сервопривода — в пин 3, коричневый — к минусу, красный — к плюсу.'],
+    [['dht'], 'Сигнальная ножка DATA датчика DHT11 идёт в пин 2, VCC — к 5V, GND — к GND.'],
+    [['sda', 'scl', 'экран'], 'SDA платы I2C идёт в A4, SCL — в A5. Если их поменять местами, экран не найдётся.'],
+    [['звуков', 'ao '], 'Контакт AO звукового датчика идёт в A0, плюс — к 5V, G — к GND.'],
+    [['rgb'], 'R — пин 9, G — пин 10, B — пин 11, общий контакт — GND.'],
+    [['ик-диод'], 'Одна ножка ИК-диода — в ряду с проводом A1, другая — к GND.'],
+    [['луч', 'излучател'], 'Светодиод-излучатель должен смотреть головкой прямо на фоторезистор с расстояния 2–4 см.'],
+    [['полярн'], 'Длинная ножка светодиода — к пину Arduino, короткая — через резистор к GND. Переверни светодиод.'],
     [['земля', 'gnd'], 'Проверь, что провод из пина GND на Arduino воткнут до конца, а второй конец стоит в той же половине синей линии или в том же ряду, что и минусы деталей. Без земли цепь разорвана.'],
     [['резистор'], 'У каждого светодиода свой резистор последовательно с ним. Проверь, что все резисторы на месте и обе ножки в плате.'],
     [['висит'], 'Найди провод, у которого конец не воткнут, и вставь его в нужный ряд до упора.'],
@@ -37,6 +47,7 @@
       pick.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
       b.setAttribute('aria-pressed', 'true');
       if (window.Tutor) Tutor.setContext({ module: m.id, defectResult: null });
+      if (window.renderDemo) window.renderDemo();
     });
     pick.appendChild(b);
   });
@@ -116,15 +127,67 @@
     const f = this.files[0];
     if (!f) return;
     if (stream) stopCamera();
-    try {
-      const img = await fileToImage(f);
-      photoBlob = await toJpeg(img, img.naturalWidth, img.naturalHeight, 1280, 0.85);
-    } catch (e) { photoBlob = f; }
+    // Небольшое JPEG-фото отправляем без пересжатия: так сервер узнаёт фото из демо-кэша
+    if (f.type === 'image/jpeg' && f.size <= 1500000) photoBlob = f;
+    else {
+      try {
+        const img = await fileToImage(f);
+        photoBlob = await toJpeg(img, img.naturalWidth, img.naturalHeight, 1280, 0.85);
+      } catch (e) { photoBlob = f; }
+    }
     showStill(URL.createObjectURL(photoBlob));
     resetStages();
     $('timeInfo').textContent = 'Фото загружено. Нажми «Проверить схему».';
     this.value = '';
   });
+
+  // ---------- Готовые фото для показа (папка demo_photos) ----------
+  // Фото берутся с самого сайта, без окна выбора файла. Байты не меняются,
+  // поэтому сервер узнаёт их в демо-кэше и отвечает сразу, даже если Google не отвечает.
+  const DEMO_PHOTOS = {
+    1: [['m1_1_01_etalon.jpg', 'Правильная сборка'], ['m1_2_06_visyachiy_provod.jpg', 'Висящий провод']],
+    2: [['m2_1_01_etalon.jpg', 'Правильная сборка']],
+    3: [['m3_1_01_etalon.jpg', 'Правильная сборка']],
+    4: [['m4_1_01_etalon.jpg', 'Правильная сборка']],
+    5: [['m5_1_01_etalon.jpg', 'Правильная сборка']],
+    6: [['m6_1_01_etalon.jpg', 'Правильная сборка'], ['m6_2_06_visyachiy_provod.jpg', 'Висящий провод'],
+        ['m6_3_07_do_ne_v_tom_pine.jpg', 'Провод не в том пине']],
+    7: [['m7_1_01_etalon.jpg', 'Правильная сборка']]
+  };
+  async function useDemo(file) {
+    try {
+      const r = await fetch('demo_photos/' + file);
+      if (!r.ok) throw new Error('нет файла');
+      const blob = await r.blob();
+      if (stream) stopCamera();
+      photoBlob = blob.type ? blob : new Blob([blob], { type: 'image/jpeg' });
+      showStill(URL.createObjectURL(photoBlob));
+      resetStages();
+      $('timeInfo').textContent = 'Готовое фото загружено. Нажми «Проверить схему».';
+    } catch (e) {
+      $('timeInfo').textContent = 'Не удалось открыть готовое фото (' + file + ').';
+    }
+  }
+  window.renderDemo = function () {
+    const list = $('demoList');
+    if (!list) return;
+    list.innerHTML = '';
+    const items = DEMO_PHOTOS[mod.id] || [];
+    $('demoRow').hidden = !items.length;
+    items.forEach(function (it) {
+      const b = el('button', 'demo-item');
+      b.type = 'button';
+      b.title = it[1];
+      const img = el('img');
+      img.src = 'demo_photos/' + it[0];
+      img.alt = it[1];
+      img.loading = 'lazy';
+      b.appendChild(img);
+      b.appendChild(el('span', '', it[1]));
+      b.addEventListener('click', function () { useDemo(it[0]); });
+      list.appendChild(b);
+    });
+  };
 
   // ---------- Этапы ----------
   const stages = Array.from(document.querySelectorAll('#stages li'));
@@ -151,7 +214,7 @@
     if (data.status === 'no_circuit') return { cls: 'warn', icon: '?', title: 'На фото не видно схему', sub: 'Наведи камеру сверху на Arduino и макетную плату.' };
     if (data.errors && data.errors.length) return { cls: 'bad', icon: '!', title: 'Найдена ошибка подключения', sub: 'Ошибок: ' + data.errors.length + '. Разберись с ними ниже или спроси тьютора.' };
     if (data.status === 'unclear') return { cls: 'warn', icon: '~', title: 'Часть схемы не видно', sub: 'Ошибок не найдено, но некоторые места нужно проверить или переснять.' };
-    return { cls: 'ok', icon: '✓', title: 'Схема собрана верно', sub: 'Детали и земля на месте. Осталось проверить пины по списку.' };
+    return { cls: 'ok', icon: '✓', title: 'Схема собрана верно', sub: 'Детали, земля и пины на месте. Пройди список «Проверь сам» ниже.' };
   }
 
   function list(title, items) {
@@ -286,7 +349,7 @@
     const started = Date.now();
     const timer = setInterval(function () { info.textContent = 'Проверяю… ' + Math.round((Date.now() - started) / 1000) + ' с'; }, 300);
     const controller = new AbortController();
-    const stopper = setTimeout(function () { controller.abort(); }, 45000);
+    const stopper = setTimeout(function () { controller.abort(); }, 90000);  // ждём сервер до 90 с
     let current = 1;
     try {
       const form = new FormData();
@@ -325,4 +388,5 @@
   });
 
   renderHistory();
+  window.renderDemo();
 })();

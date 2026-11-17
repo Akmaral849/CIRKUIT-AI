@@ -64,7 +64,7 @@
   speakToggle.checked = load('circuitai-speak', true);
   speakToggle.addEventListener('change', function () {
     save('circuitai-speak', speakToggle.checked);
-    if (!speakToggle.checked && window.speechSynthesis) speechSynthesis.cancel();
+    if (!speakToggle.checked) tutorStopSpeech();
   });
 
   // ---------- Эмоции ----------
@@ -187,7 +187,7 @@
     panel.hidden = true;
     root.classList.remove('open');
     fab.setAttribute('aria-expanded', 'false');
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    tutorStopSpeech();
   }
   fab.addEventListener('click', function () { panel.hidden ? open() : close(); });
   root.querySelector('.tw-close').addEventListener('click', close);
@@ -225,7 +225,7 @@
     function listen() {
       open();
       if (listening) { rec.stop(); return; }
-      if (window.speechSynthesis) speechSynthesis.cancel();
+      tutorStopSpeech();
       finalText = '';
       listening = true;
       root.classList.add('listening');

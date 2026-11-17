@@ -7,6 +7,14 @@
   <title>ИИ-дефектоскоп — Circuit AI</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="pages.css">
+  <style>
+    .demo-row { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .demo-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .demo-item { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 112px; padding: 6px;
+      border: 1px solid rgba(120, 100, 200, .25); border-radius: 12px; background: #fff; cursor: pointer; font: inherit; font-size: 12px; }
+    .demo-item:hover { border-color: rgba(120, 100, 200, .7); }
+    .demo-item img { width: 100px; height: 66px; object-fit: cover; border-radius: 8px; }
+  </style>
 </head>
 <body>
   <header class="topbar"><div class="wrap">
@@ -54,6 +62,12 @@
           <button class="btn btn-ghost" id="uploadBtn" type="button">Загрузить фото</button>
           <input type="file" id="fileInput" accept="image/*" hidden>
           <span class="time" id="timeInfo" aria-live="polite"></span>
+        </div>
+
+        <div class="demo-row" id="demoRow" hidden>
+          <b>Готовые фото этого модуля</b>
+          <span class="hint">Нажми на фото — оно загрузится без поиска в папках.</span>
+          <div class="demo-list" id="demoList"></div>
         </div>
 
         <details class="tips">

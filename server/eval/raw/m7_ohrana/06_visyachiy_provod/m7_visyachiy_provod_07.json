@@ -1,0 +1,79 @@
+{
+ "raw": {
+  "no_circuit": false,
+  "photoresistor": {
+   "status": "yes",
+   "evidence": "Small component with a snake-like pattern located on the left side of the breadboard.",
+   "box": [
+    670,
+    10,
+    730,
+    70
+   ]
+  },
+  "green_leds": {
+   "found": [
+    "Green LED near column 40",
+    "Green LED near column 50"
+   ],
+   "value": 2,
+   "evidence": "Two green LEDs are visible on the bottom row of the breadboard.",
+   "box": [
+    740,
+    500,
+    830,
+    650
+   ]
+  },
+  "resistor_count": {
+   "found": [
+    "Resistor connected to the middle green LED",
+    "Resistor connected to the right green LED"
+   ],
+   "value": 2,
+   "evidence": "Two resistors are connected in series with the two green LEDs.",
+   "box": [
+    740,
+    500,
+    830,
+    650
+   ]
+  },
+  "photo_pin": {
+   "value": "A0",
+   "evidence": "The yellow wire from the photoresistor circuit connects to the A0 pin on the Arduino.",
+   "box": [
+    350,
+    450,
+    550,
+    600
+   ]
+  },
+  "power_wires": [
+   {
+    "socket": "5V",
+    "color": "красный"
+   },
+   {
+    "socket": "GND",
+    "color": "черный"
+   }
+  ],
+  "gnd_other_end": {
+   "status": "rail",
+   "evidence": "The black wire from the Arduino GND pin connects to the blue negative rail on the breadboard.",
+   "box": [
+    550,
+    350,
+    750,
+    450
+   ]
+  },
+  "hanging_wires": []
+ },
+ "model": "gemini-3.1-flash-lite",
+ "seconds": 10.7,
+ "error": null,
+ "prompt": "73345fe04d61",
+ "time": "2026-11-16T17:28:47"
+}

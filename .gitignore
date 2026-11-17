@@ -26,3 +26,6 @@ assetstutorsom/
 # файлы, которые сервер создаёт сам
 server/check_cache.json
 server/checks_log.jsonl
+
+# пробные записи голосов (большие файлы)
+server/voice_test/

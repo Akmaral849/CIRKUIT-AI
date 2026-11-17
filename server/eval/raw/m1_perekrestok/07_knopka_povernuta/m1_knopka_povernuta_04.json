@@ -1,0 +1,91 @@
+{
+ "raw": {
+  "no_circuit": false,
+  "leds": {
+   "status": "yes",
+   "evidence": "Three LEDs (green, yellow, red) are visible in a vertical row on the breadboard.",
+   "box": [
+    608,
+    370,
+    825,
+    405
+   ]
+  },
+  "resistor_count": {
+   "found": [
+    "Resistor near green LED",
+    "Resistor near yellow LED",
+    "Resistor near red LED"
+   ],
+   "value": 3,
+   "evidence": "Three resistors are visible, each connected in series with one of the three LEDs.",
+   "box": [
+    615,
+    315,
+    825,
+    355
+   ]
+  },
+  "led_polarity": {
+   "status": "cannot_see",
+   "evidence": "The orientation of the LED legs is obscured by the breadboard and wiring, making it impossible to determine polarity.",
+   "box": null
+  },
+  "button": {
+   "status": "yes",
+   "evidence": "A round blue push button is visible on the breadboard.",
+   "box": [
+    445,
+    345,
+    540,
+    415
+   ]
+  },
+  "button_across": {
+   "status": "yes",
+   "evidence": "The button is placed across the central groove of the breadboard, with legs on both sides.",
+   "box": [
+    445,
+    345,
+    540,
+    415
+   ]
+  },
+  "buzzer": {
+   "status": "yes",
+   "evidence": "A black circular buzzer is visible on the breadboard.",
+   "box": [
+    335,
+    350,
+    435,
+    420
+   ]
+  },
+  "power_wires": [
+   {
+    "socket": "5V",
+    "color": "красный"
+   },
+   {
+    "socket": "GND",
+    "color": "чёрный"
+   }
+  ],
+  "gnd_other_end": {
+   "status": "rail",
+   "evidence": "The black wire from the GND pin connects to the negative power rail on the breadboard.",
+   "box": [
+    465,
+    535,
+    650,
+    650
+   ]
+  },
+  "hanging_wires": []
+ },
+ "model": "gemini-3.1-flash-lite",
+ "seconds": 7.1,
+ "error": null,
+ "prompt": "38e3447ce3c5",
+ "time": "2026-11-16T17:11:50"
+}

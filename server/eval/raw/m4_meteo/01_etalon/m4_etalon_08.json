@@ -1,0 +1,72 @@
+{
+ "raw": {
+  "no_circuit": false,
+  "dht": {
+   "status": "yes",
+   "evidence": "Голубой корпус датчика DHT11 с решеткой виден на макетной плате.",
+   "box": [
+    425,
+    525,
+    475,
+    675
+   ]
+  },
+  "lcd": {
+   "status": "cannot_see",
+   "evidence": "На фото не видно экрана LCD 1602. Видны только датчики и провода.",
+   "box": null
+  },
+  "lcd_wires": {
+   "found": [],
+   "value": 0,
+   "evidence": "Экран LCD 1602 отсутствует, следовательно, провода к нему не подключены.",
+   "box": null
+  },
+  "dht_data": {
+   "value": "2",
+   "evidence": "Провод от сигнальной ножки DHT11 (вторая слева) идет к цифровому пину 2 на Arduino.",
+   "box": [
+    350,
+    250,
+    750,
+    600
+   ]
+  },
+  "sda": {
+   "value": null,
+   "evidence": "Экран LCD 1602 отсутствует, поэтому подключение SDA отсутствует.",
+   "box": null
+  },
+  "scl": {
+   "value": null,
+   "evidence": "Экран LCD 1602 отсутствует, поэтому подключение SCL отсутствует.",
+   "box": null
+  },
+  "power_wires": [
+   {
+    "socket": "5V",
+    "color": "черный"
+   },
+   {
+    "socket": "GND",
+    "color": "черный"
+   }
+  ],
+  "gnd_other_end": {
+   "status": "rail",
+   "evidence": "Провод GND от Arduino идет к синей линии питания на макетной плате.",
+   "box": [
+    550,
+    350,
+    850,
+    650
+   ]
+  },
+  "hanging_wires": []
+ },
+ "model": "gemini-3.1-flash-lite",
+ "seconds": 7.1,
+ "error": null,
+ "prompt": "5159a0420d8f",
+ "time": "2026-11-16T17:29:35"
+}

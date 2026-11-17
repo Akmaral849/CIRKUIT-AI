@@ -1,0 +1,93 @@
+{
+ "raw": {
+  "no_circuit": false,
+  "led_count": {
+   "found": [
+    "LED 1 in row 14",
+    "LED 2 in row 10"
+   ],
+   "value": 2,
+   "evidence": "Two red LEDs are visible on the breadboard.",
+   "box": [
+    480,
+    250,
+    600,
+    380
+   ]
+  },
+  "resistor_count": {
+   "found": [
+    "Resistor 1 in row 14",
+    "Resistor 2 in row 10"
+   ],
+   "value": 2,
+   "evidence": "Two resistors with blue bodies are connected to the LEDs.",
+   "box": [
+    480,
+    200,
+    600,
+    300
+   ]
+  },
+  "led_polarity": {
+   "status": "cannot_see",
+   "evidence": "The flat side of the LEDs is not clearly visible to determine polarity.",
+   "box": [
+    480,
+    250,
+    600,
+    380
+   ]
+  },
+  "photoresistor": {
+   "status": "yes",
+   "evidence": "A photoresistor is present at the bottom of the breadboard.",
+   "box": [
+    650,
+    200,
+    750,
+    300
+   ]
+  },
+  "photo_pin": {
+   "value": "A0",
+   "evidence": "A green wire connects the photoresistor to the A0 pin.",
+   "box": [
+    550,
+    450,
+    650,
+    600
+   ]
+  },
+  "power_wires": [
+   {
+    "socket": "5V",
+    "color": "красный"
+   },
+   {
+    "socket": "GND",
+    "color": "черный"
+   },
+   {
+    "socket": "GND",
+    "color": "зеленый"
+   }
+  ],
+  "gnd_other_end": {
+   "status": "rail",
+   "evidence": "The GND wire from the digital side connects to the blue rail on the breadboard.",
+   "box": [
+    750,
+    100,
+    850,
+    300
+   ]
+  },
+  "hanging_wires": []
+ },
+ "model": "gemini-3.1-flash-lite",
+ "seconds": 23.2,
+ "error": null,
+ "prompt": "c6cc8456d0b8",
+ "time": "2026-11-16T17:19:23"
+}
