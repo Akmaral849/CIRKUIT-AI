@@ -25,6 +25,9 @@
     .nn-bar-fill { display: block; height: 100%; background: #E11D48; border-radius: 6px; }
     .nn-bar-fill.ok { background: #0E9F6E; }
     .nn-bar-pct { text-align: right; font-weight: 700; }
+    .mode-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .mode-pick .hint { flex-basis: 100%; }
+    .live-marks { right: auto; bottom: auto; z-index: 3; }
   </style>
 </head>
 <body>
@@ -43,12 +46,17 @@
       <div>
         <span class="eyebrow">ИИ-дефектоскоп</span>
         <h1 style="font-size: clamp(28px, 4vw, 44px); margin-top: 14px;">Проверка схемы <span class="grad-text">по фото</span></h1>
-        <p class="lead">Выбери модуль и наведи камеру на собранную схему: своя нейросеть Circuit AI сразу пишет «правильно» или какая ошибка.</p>
+        <p class="lead">Выбери модуль и наведи камеру на собранную схему: Circuit AI сравнивает её с правильной сборкой и показывает, где ошибка.</p>
         <span class="nn-status" id="nnStatus" aria-live="polite"></span>
       </div>
     </div>
 
     <div class="mod-pick" id="modPick" role="group" aria-label="Модуль"></div>
+    <div class="mode-pick" id="modePick" role="group" aria-label="Режим проверки">
+      <button type="button" class="chip" data-mode="cmp" aria-pressed="true">Сравнение с эталоном</button>
+      <button type="button" class="chip" data-mode="nn" aria-pressed="false">Нейросеть (исследование)</button>
+      <span class="hint" id="modeHint"></span>
+    </div>
 
     <div class="det-grid" style="margin-top: 20px;">
       <section class="card det-work" aria-label="Рабочая область">
@@ -56,6 +64,7 @@
           <span class="live-badge">Живая камера</span>
           <span class="nn-live" id="nnLive" hidden aria-live="polite"></span>
           <video id="video" playsinline muted hidden></video>
+          <div class="marks live-marks" id="liveMarks"></div>
           <div class="still" id="still" hidden>
             <img id="stillImg" alt="Снимок схемы">
             <div class="marks" id="marks"></div>
@@ -70,6 +79,7 @@
 
         <div class="det-actions">
           <button class="btn btn-ghost" id="camBtn" type="button">Включить камеру</button>
+          <button class="btn btn-ghost" id="refBtn" type="button" hidden>Запомнить правильную сборку</button>
           <button class="btn btn-lg" id="checkBtn" type="button" disabled>Проверить схему</button>
           <button class="btn btn-ghost" id="liveBtn" type="button" hidden>Снова камера</button>
           <button class="btn btn-ghost" id="uploadBtn" type="button">Загрузить фото</button>
@@ -100,7 +110,7 @@
           <h3 style="margin-bottom: 14px;">Этапы проверки</h3>
           <ol class="stages" id="stages">
             <li>Снимок готов</li>
-            <li>Нейросеть смотрит на схему</li>
+            <li>ИИ анализирует схему</li>
             <li>Итог готов</li>
             <li>Тьютор объясняет</li>
           </ol>

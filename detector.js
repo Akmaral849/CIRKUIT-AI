@@ -157,6 +157,179 @@
     return data;
   }
 
+  // ---------- Сравнение с эталоном (главный режим для живого показа) ----------
+  // Телефон стоит неподвижно. Эталон снимается ~2,5 с: для каждой точки запоминаем
+  // диапазон яркости (мигание светодиодов и шум камеры попадают в допуск).
+  // Потом каждый кадр сравнивается с этим диапазоном, изменённые участки обводятся рамкой.
+  const CW = 320, CELL = 10, DIFF_T = 22, CELL_FRAC = 0.10, STABLE = 3;
+  const cmp = { lo: null, hi: null, mean: 0, w: 0, h: 0, capturing: false, persist: null, boxes: [], moved: false, cells: 0 };
+  const cmpCanvas = document.createElement('canvas');
+  const cmpCtx = cmpCanvas.getContext('2d', { willReadFrequently: true });
+
+  function blur3(a, w, h) {
+    const o = new Float32Array(a.length);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let s = 0, n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy; if (yy < 0 || yy >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx; if (xx < 0 || xx >= w) continue;
+            s += a[yy * w + xx]; n++;
+          }
+        }
+        o[y * w + x] = s / n;
+      }
+    }
+    return o;
+  }
+  function grabGray(src, sw, sh) {
+    const w = CW, h = Math.max(1, Math.round(CW * sh / sw));
+    if (cmpCanvas.width !== w || cmpCanvas.height !== h) { cmpCanvas.width = w; cmpCanvas.height = h; }
+    cmpCtx.drawImage(src, 0, 0, w, h);
+    const d = cmpCtx.getImageData(0, 0, w, h).data;
+    let g = new Float32Array(w * h), sum = 0;
+    for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
+    g = blur3(blur3(g, w, h), w, h);
+    for (let i = 0; i < g.length; i++) sum += g[i];
+    return { g: g, w: w, h: h, mean: sum / g.length };
+  }
+  // допуск на сдвиг камеры в 1 пиксель: min/max по соседям 3×3
+  function spread(a, w, h, useMax) {
+    const o = new Float32Array(a.length);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let v = a[y * w + x];
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy; if (yy < 0 || yy >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx; if (xx < 0 || xx >= w) continue;
+            const u = a[yy * w + xx];
+            if (useMax ? u > v : u < v) v = u;
+          }
+        }
+        o[y * w + x] = v;
+      }
+    }
+    return o;
+  }
+
+  function captureReference() {
+    if (!stream || !video.videoWidth) return;
+    cmp.capturing = true;
+    cmp.lo = null; cmp.boxes = []; cmp.persist = null; cmp.moved = false;
+    drawLiveMarks([]);
+    const frames = [];
+    let n = 0;
+    $('timeInfo').textContent = 'Запоминаю правильную сборку… не двигай телефон и плату';
+    const t = setInterval(function () {
+      frames.push(grabGray(video, video.videoWidth, video.videoHeight));
+      n++;
+      if (n < 10) return;
+      clearInterval(t);
+      const f0 = frames[0], w = f0.w, h = f0.h;
+      let lo = new Float32Array(w * h).fill(255), hi = new Float32Array(w * h).fill(0);
+      frames.forEach(function (f) {
+        const k = f0.mean / (f.mean || 1);
+        for (let i = 0; i < lo.length; i++) { const v = f.g[i] * k; if (v < lo[i]) lo[i] = v; if (v > hi[i]) hi[i] = v; }
+      });
+      cmp.lo = spread(lo, w, h, false);
+      cmp.hi = spread(hi, w, h, true);
+      cmp.mean = f0.mean; cmp.w = w; cmp.h = h;
+      cmp.persist = new Uint8Array(Math.ceil(w / CELL) * Math.ceil(h / CELL));
+      cmp.capturing = false;
+      $('refBtn').textContent = 'Запомнить заново';
+      $('timeInfo').textContent = 'Эталон сохранён. Теперь можно вынуть деталь — место изменения обведётся рамкой.';
+      if (window.Tutor) Tutor.setEmotion('happy', 2500);
+    }, 250);
+  }
+
+  function compareFrame() {
+    const f = grabGray(video, video.videoWidth, video.videoHeight);
+    if (f.w !== cmp.w || f.h !== cmp.h) { cmp.lo = null; return; }
+    const w = f.w, h = f.h, k = cmp.mean / (f.mean || 1);
+    const gw = Math.ceil(w / CELL), gh = Math.ceil(h / CELL);
+    const cnt = new Uint16Array(gw * gh), tot = new Uint16Array(gw * gh);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x, v = f.g[i] * k;
+        const d = v < cmp.lo[i] ? cmp.lo[i] - v : (v > cmp.hi[i] ? v - cmp.hi[i] : 0);
+        const c = ((y / CELL) | 0) * gw + ((x / CELL) | 0);
+        tot[c]++;
+        if (d > DIFF_T) cnt[c]++;
+      }
+    }
+    let stable = 0;
+    for (let c = 0; c < cnt.length; c++) {
+      if (cnt[c] / tot[c] > CELL_FRAC) cmp.persist[c] = Math.min(255, cmp.persist[c] + 1);
+      else cmp.persist[c] = 0;
+      if (cmp.persist[c] >= STABLE) stable++;
+    }
+    cmp.moved = stable > cnt.length * 0.35;
+    // соседние изменённые клетки → одна рамка
+    const seen = new Uint8Array(cnt.length), boxes = [];
+    for (let c = 0; c < cnt.length; c++) {
+      if (seen[c] || cmp.persist[c] < STABLE) continue;
+      const q = [c]; seen[c] = 1;
+      let x0 = gw, y0 = gh, x1 = 0, y1 = 0, px = 0;
+      while (q.length) {
+        const u = q.pop(), ux = u % gw, uy = (u / gw) | 0;
+        px += cnt[u];
+        if (ux < x0) x0 = ux; if (ux > x1) x1 = ux; if (uy < y0) y0 = uy; if (uy > y1) y1 = uy;
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (dd) {
+          const nx = ux + dd[0], ny = uy + dd[1];
+          if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) return;
+          const v2 = ny * gw + nx;
+          if (!seen[v2] && cmp.persist[v2] >= STABLE) { seen[v2] = 1; q.push(v2); }
+        });
+      }
+      if (px < 15) continue;
+      boxes.push({ px: px, box: [
+        Math.max(0, (y0 - 0.5) * CELL / h * 1000), Math.max(0, (x0 - 0.5) * CELL / w * 1000),
+        Math.min(1000, (y1 + 1.5) * CELL / h * 1000), Math.min(1000, (x1 + 1.5) * CELL / w * 1000)] });
+    }
+    boxes.sort(function (a, b) { return b.px - a.px; });
+    cmp.boxes = cmp.moved ? [] : boxes.slice(0, 4);
+  }
+
+  // рамки поверх живого видео (учитываем поля object-fit: contain)
+  function drawLiveMarks(boxes) {
+    const layer = $('liveMarks');
+    if (!layer) return;
+    if (!boxes.length || video.hidden || !video.videoWidth) { layer.innerHTML = ''; return; }
+    const vw = video.clientWidth, vh = video.clientHeight, a = video.videoWidth / video.videoHeight;
+    const cw = Math.min(vw, vh * a), ch = cw / a;
+    layer.style.left = (video.offsetLeft + (vw - cw) / 2) + 'px';
+    layer.style.top = (video.offsetTop + (vh - ch) / 2) + 'px';
+    layer.style.width = cw + 'px'; layer.style.height = ch + 'px';
+    drawMarks(boxes.map(function (b) { return { box: b.box, kind: 'error', label: 'Отличие' }; }), layer);
+  }
+
+  function cmpHint(modId) {
+    const m = NN_ERRORS[modId] || {};
+    return Object.keys(m).map(function (k) { return m[k][0]; }).join(' ');
+  }
+  function cmpResult() {
+    const n = cmp.boxes.length;
+    const data = { source: 'cmp', module: mod.id, errors: [], fixes: [], found: [], unclear: [], manual: [],
+      marks: cmp.boxes.map(function (b) { return { box: b.box, kind: 'error', label: 'Отличие' }; }) };
+    if (cmp.moved) {
+      data.status = 'unclear';
+      data.unclear = ['Изменилась почти вся картинка: сдвинулась камера или в кадре рука. Нажми «Запомнить заново», не двигая телефон.'];
+      data.speech = 'Похоже, камера сдвинулась. Запомни правильную сборку заново.';
+    } else if (n) {
+      data.status = 'error';
+      data.errors = ['Плата отличается от правильной сборки: ' + (n === 1 ? 'одно место' : n + ' места') + ' в красной рамке.'];
+      data.fixes = ['Посмотри в рамку: там вынута деталь, выдернут или переставлен провод. Частые ошибки этого модуля: ' + cmpHint(mod.id)];
+      data.speech = 'Я сравнил плату с правильной сборкой и нашёл отличие. Посмотри в красную рамку: там вынута деталь или выдернут провод. Верни её на место по схеме.';
+    } else {
+      data.status = 'ok';
+      data.found = ['Сравнение с эталоном: отличий от правильной сборки не найдено.'];
+      data.speech = 'Плата совпадает с правильной сборкой. Отличий не вижу.';
+    }
+    return data;
+  }
+
   // ---------- Модуль ----------
   const params = new URLSearchParams(location.search);
   let mod = MODULES.find(function (m) { return m.id === (Number(params.get('module')) || load('circuitai-module', 1)); }) || MODULES[0];
@@ -171,6 +344,9 @@
       pick.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
       b.setAttribute('aria-pressed', 'true');
       nn.avg = null;
+      cmp.lo = null; cmp.boxes = [];
+      $('refBtn').textContent = 'Запомнить правильную сборку';
+      drawLiveMarks([]);
       if (window.Tutor) Tutor.setContext({ module: m.id, defectResult: null });
       if (window.renderDemo) window.renderDemo();
       prepareModel();
@@ -195,6 +371,22 @@
     });
   }
 
+  // ---------- Режим: сравнение с эталоном / нейросеть ----------
+  let mode = load('circuitai-mode', 'cmp');
+  function applyMode() {
+    document.querySelectorAll('#modePick .chip').forEach(function (c) { c.setAttribute('aria-pressed', String(c.dataset.mode === mode)); });
+    $('refBtn').hidden = !(mode === 'cmp' && stream);
+    $('modeHint').textContent = mode === 'cmp'
+      ? 'Поставь телефон неподвижно над платой, нажми «Запомнить правильную сборку», потом вынь деталь — место отличия обведётся рамкой.'
+      : 'Исследовательский режим: своя нейросеть (7 моделей Teachable Machine) угадывает тип ошибки по кадру.';
+    if (nnStatus) nnStatus.hidden = mode !== 'nn';
+    drawLiveMarks([]);
+    nn.avg = null;
+  }
+  document.querySelectorAll('#modePick .chip').forEach(function (c) {
+    c.addEventListener('click', function () { mode = c.dataset.mode; save('circuitai-mode', mode); applyMode(); });
+  });
+
   // ---------- Камера ----------
   const viewer = $('viewer'), video = $('video'), still = $('still'), stillImg = $('stillImg');
   const empty = $('viewerEmpty'), camBtn = $('camBtn'), liveBtn = $('liveBtn'), checkBtn = $('checkBtn'), geminiBtn = $('geminiBtn');
@@ -207,6 +399,7 @@
     checkBtn.disabled = false; geminiBtn.disabled = false;
     checkBtn.textContent = 'Проверить схему';
     nn.avg = null;
+    $('refBtn').hidden = mode !== 'cmp';
     startLive();
   }
   function showStill(src) {
@@ -222,9 +415,20 @@
   // Живой вердикт: ~4 раза в секунду, среднее по последним кадрам, чтобы надпись не прыгала
   function startLive() {
     stopLive();
-    if (!nn.ready) return;
     liveTimer = setInterval(async function () {
       if (nn.busy || !stream || video.hidden || !video.videoWidth) return;
+      if (mode === 'cmp') {
+        nnLive.hidden = false;
+        if (cmp.capturing) { nnLive.textContent = 'Запоминаю эталон…'; nnLive.className = 'nn-live warn'; return; }
+        if (!cmp.lo) { nnLive.textContent = 'Нажми «Запомнить правильную сборку»'; nnLive.className = 'nn-live'; drawLiveMarks([]); return; }
+        compareFrame();
+        drawLiveMarks(cmp.boxes);
+        if (cmp.moved) { nnLive.textContent = 'Камера сдвинулась — запомни заново'; nnLive.className = 'nn-live warn'; }
+        else if (cmp.boxes.length) { nnLive.textContent = 'Найдено отличие: ' + cmp.boxes.length; nnLive.className = 'nn-live bad'; }
+        else { nnLive.textContent = 'Совпадает с эталоном'; nnLive.className = 'nn-live ok'; }
+        return;
+      }
+      if (!nn.ready) return;
       nn.busy = true;
       try {
         const m = await getModel(mod.id);
@@ -246,6 +450,7 @@
     if (liveTimer) clearInterval(liveTimer);
     liveTimer = null;
     if (nnLive) nnLive.hidden = true;
+    drawLiveMarks([]);
   }
 
   async function startCamera() {
@@ -272,6 +477,8 @@
     camBtn.textContent = 'Включить камеру';
     viewer.classList.remove('live');
     liveBtn.hidden = true;
+    $('refBtn').hidden = true;
+    cmp.lo = null;
     if (photoBlob) { video.hidden = true; still.hidden = false; }
     else { video.hidden = true; empty.hidden = false; checkBtn.disabled = true; geminiBtn.disabled = true; }
   }
@@ -369,8 +576,8 @@
   function stage(i, state) { if (stages[i]) stages[i].className = state; }
 
   // ---------- Итог ----------
-  function drawMarks(marks) {
-    const layer = $('marks');
+  function drawMarks(marks, target) {
+    const layer = target || $('marks');
     layer.innerHTML = '';
     (marks || []).forEach(function (m) {
       if (!Array.isArray(m.box) || m.box.length !== 4) return;
@@ -385,6 +592,11 @@
   }
 
   function verdictOf(data) {
+    if (data.source === 'cmp') {
+      if (data.status === 'ok') return { cls: 'ok', icon: '✓', title: 'Совпадает с правильной сборкой', sub: 'Сравнение с эталоном: отличий не найдено.' };
+      if (data.status === 'error') return { cls: 'bad', icon: '!', title: 'Найдено отличие от правильной сборки', sub: 'Мест с изменениями: ' + data.marks.length + '. Смотри красные рамки на снимке.' };
+      return { cls: 'warn', icon: '~', title: 'Камера сдвинулась', sub: 'Запомни правильную сборку заново, не двигая телефон.' };
+    }
     if (data.source === 'nn') {
       const pct = Math.round((data.confidence || 0) * 100);
       if (data.status === 'ok') return { cls: 'ok', icon: '✓', title: 'Схема собрана верно', sub: 'Своя нейросеть Circuit AI уверена на ' + pct + ' %.' };
@@ -613,10 +825,28 @@
     }
   }
 
+  async function runCmpCheck() {
+    resetStages();
+    if (!stream) { showError('Сравнение с эталоном работает с живой камерой. Включи камеру или переключись на режим «Нейросеть».'); return; }
+    if (!cmp.lo) { showError('Сначала наведи камеру на правильную плату и нажми «Запомнить правильную сборку».'); return; }
+    stage(0, 'done'); stage(1, 'active');
+    const data = cmpResult();
+    photoBlob = await toJpeg(video, video.videoWidth, video.videoHeight, 1280, 0.85);
+    showStill(URL.createObjectURL(photoBlob));
+    stage(1, 'done'); stage(2, 'done');
+    finish(data, 'Сравнение с эталоном · без интернета');
+    checkBtn.disabled = false;
+    checkBtn.textContent = 'Снова живая камера';
+  }
+
   checkBtn.addEventListener('click', function () {
     if (stream && !still.hidden) { showLive(); return; }
     checkBtn.disabled = true;
-    runNnCheck();
+    if (mode === 'cmp') runCmpCheck(); else runNnCheck();
+  });
+  $('refBtn').addEventListener('click', function () {
+    if (stream && !still.hidden) showLive();
+    captureReference();
   });
   geminiBtn.addEventListener('click', function () {
     if (stream && !still.hidden) showLive();
@@ -626,6 +856,7 @@
   renderHistory();
   window.renderDemo();
   prepareModel();
+  applyMode();
   // Список готовых фото делает скрипт server/make_maket_demo.py (demo_photos/list.json)
   fetch('demo_photos/list.json', { cache: 'no-store' })
     .then(function (r) { return r.ok ? r.json() : null; })
