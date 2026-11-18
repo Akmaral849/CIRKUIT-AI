@@ -12,10 +12,12 @@ const int BUZZER = 8;
 const int BEAM = A0;
 const int GUARD_LED = 6;
 
-const int FIRE_DELTA = 60;   // насколько должно измениться число на A1, чтобы считать «огонь»
+const int FIRE_DELTA = 3;    // на сколько должно УПАСТЬ число на A1 (среднее из 64), чтобы считать «огонь»
+const int FIRE_NEED = 3;     // столько измерений подряд должно показать огонь — защита от случайных скачков
 const int BEAM_DELTA = 100;  // насколько должно вырасти число на A0, когда луч перекрыт
 
-int irBase = 0;              // обычное значение ИК-диода (без огня)
+float irBase = 0;            // обычное значение ИК-диода (без огня), медленно подстраивается под комнату
+int fireCount = 0;
 int limit = 1000;            // порог «луч перекрыт»
 bool blocked = false;
 int passes = 0;
@@ -28,6 +30,12 @@ int readAvg(int pin) {        // среднее из 5 измерений, чт�
   long sum = 0;
   for (int i = 0; i < 5; i++) sum += analogRead(pin);
   return sum / 5;
+}
+
+float readFine(int pin) {     // среднее из 64 измерений: шум почти исчезает, видно даже маленькое падение
+  long sum = 0;
+  for (int i = 0; i < 64; i++) sum += analogRead(pin);
+  return sum / 64.0;
 }
 
 void setup() {
@@ -45,11 +53,12 @@ void setup() {
     beamSum += analogRead(BEAM);
     delay(50);
   }
-  irBase = irSum / 40;
+  irBase = irSum / 40.0;
   int beam = beamSum / 40;
   limit = min(beam + BEAM_DELTA, 1000);
 
-  Serial.print("Пожар: обычное значение A1 = "); Serial.println(irBase);
+  Serial.print("Пожар: обычное значение A1 = "); Serial.print(irBase, 1);
+  Serial.print(", огонь ниже "); Serial.println(irBase - FIRE_DELTA, 1);
   Serial.print("Охрана: луч A0 = "); Serial.print(beam);
   Serial.print(", тревога выше "); Serial.println(limit);
   if (beam > 900) Serial.println("ВНИМАНИЕ: луч слабый. Проверь, что излучатель горит и светит прямо в фоторезистор.");
@@ -57,8 +66,10 @@ void setup() {
 
 void loop() {
   // ---------- Модуль 6: пожар ----------
-  int ir = readAvg(IR_PIN);
-  bool fire = abs(ir - irBase) > FIRE_DELTA;
+  float ir = readFine(IR_PIN);
+  if (ir < irBase - FIRE_DELTA) fireCount++;   // огонь даёт ИК-излучение — число падает
+  else { fireCount = 0; irBase = irBase * 0.997 + ir * 0.003; }   // без огня фон медленно подстраивается
+  bool fire = fireCount >= FIRE_NEED;
   if (fire) {
     if (millis() - lastBlink > 250) {          // сирена: мигание и два тона
       lastBlink = millis();
@@ -87,7 +98,8 @@ void loop() {
   // Раз в секунду — числа в монитор порта (для проверки и защиты)
   if (millis() - lastPrint > 1000) {
     lastPrint = millis();
-    Serial.print("A1 (ИК) = "); Serial.print(ir);
+    Serial.print("A1 (ИК) = "); Serial.print(ir, 1);
+    Serial.print(" (фон "); Serial.print(irBase, 1); Serial.print(")");
     Serial.print(fire ? "  ПОЖАР!" : "  норма");
     Serial.print(" | A0 (луч) = "); Serial.println(v);
   }

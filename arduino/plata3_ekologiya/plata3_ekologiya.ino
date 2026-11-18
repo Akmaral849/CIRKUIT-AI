@@ -1,90 +1,107 @@
-// Плата 3 «Экология»: модуль 4 (метеостанция) + модуль 5 (шумомер).
-// Метеостанция: DHT11 на пине 2, экран I2C (SDA — A4, SCL — A5).
-// Шумомер: выход AO звукового датчика — A0 (аналоговый сигнал),
-// RGB-модуль: R — 9, G — 10, B — 11.
-#include <DHT.h>
-#include <Wire.h>
-#include <hd44780.h>
-#include <hd44780ioClass/hd44780_I2Cexp.h>
+// Плата 4 «Безопасность»: модуль 6 (пожарная сигнализация) + модуль 7 (охрана здания).
+// Пожар: голый ИК-диод — A1 (встроенная подтяжка, вторая ножка к GND),
+//        красный светодиод — пин 5, зуммер — пин 8.
+// Охрана: зелёный светодиод-излучатель горит всегда (через резистор к 5V),
+//         фоторезистор — A0 (встроенная подтяжка, вторая ножка к GND),
+//         зелёный светодиод тревоги — пин 6, звук — тот же зуммер.
+// После включения 2 секунды идёт калибровка: не подносить огонь и не перекрывать луч.
 
-DHT dht(2, DHT11);
-hd44780_I2Cexp lcd;
-unsigned long lastMeteo = 0;
+const int IR_PIN = A1;
+const int FIRE_LED = 5;
+const int BUZZER = 8;
+const int BEAM = A0;
+const int GUARD_LED = 6;
 
-const int MIC = A0;
-const int R = 9, G = 10, B = 11;
-int QUIET = 30, LOUD = 100;     // пороги считаются сами при включении
-unsigned long redUntil = 0, lastPrint = 0;
-int peak = 0, sMin = 1023, sMax = 0;   // для Монитора порта: размах, минимум и максимум за 1 с
+const int FIRE_DELTA = 30;   // на сколько должно УПАСТЬ число на A1 (среднее из 64), чтобы считать «огонь»
+const int FIRE_NEED = 3;     // столько измерений подряд должно показать огонь — защита от случайных скачков
+const int BEAM_DELTA = 100;  // насколько должно вырасти число на A0, когда луч перекрыт
 
-void color(int r, int g, int b) { analogWrite(R, r); analogWrite(G, g); analogWrite(B, b); }
+float irBase = 0;            // обычное значение ИК-диода (без огня), медленно подстраивается под комнату
+int fireCount = 0;
+int limit = 1000;            // порог «луч перекрыт»
+bool blocked = false;
+int passes = 0;
+unsigned long guardUntil = 0;
+unsigned long lastBlink = 0;
+unsigned long lastPrint = 0;
+bool blinkOn = false;
 
-// Размах сигнала микрофона за 50 мс: чем громче, тем больше
-int measureNoise() {
-  int lo = 1023, hi = 0;
-  unsigned long start = millis();
-  while (millis() - start < 50) {
-    int v = analogRead(MIC);
-    if (v < lo) lo = v;
-    if (v > hi) hi = v;
-  }
-  if (lo < sMin) sMin = lo;
-  if (hi > sMax) sMax = hi;
-  return hi - lo;
+int readAvg(int pin) {        // среднее из 5 измерений, чтобы убрать дрожание
+  long sum = 0;
+  for (int i = 0; i < 5; i++) sum += analogRead(pin);
+  return sum / 5;
 }
 
-void calibrateNoise() {
-  // 2 секунды слушаем тишину (не шуметь!)
-  long sum = 0; int maxL = 0;
-  for (int i = 0; i < 40; i++) { int l = measureNoise(); sum += l; if (l > maxL) maxL = l; }
-  int base = sum / 40;
-  QUIET = maxL + 5;
-  LOUD = max(maxL + 25, base * 2);
-  if (LOUD > 1000) LOUD = 1000;
-  Serial.print("Шум: фон "); Serial.print(base);
-  Serial.print(", тихо до "); Serial.print(QUIET);
-  Serial.print(", громко от "); Serial.println(LOUD);
-}
-
-void noiseTick() {
-  int level = measureNoise();
-  if (level > peak) peak = level;
-  if (millis() - lastPrint > 1000) {
-    lastPrint = millis();
-    Serial.print("Шум: размах "); Serial.print(peak);
-    Serial.print("  (A0 от "); Serial.print(sMin); Serial.print(" до "); Serial.print(sMax);
-    Serial.print(")  громко от "); Serial.println(LOUD);
-    peak = 0; sMin = 1023; sMax = 0;
-  }
-  if (level >= LOUD) redUntil = millis() + 2000;   // держим красный 2 секунды
-  if (millis() < redUntil) color(255, 0, 0);       // громко — красный
-  else if (level < QUIET) color(0, 255, 0);        // тихо — зелёный
-  else color(255, 120, 0);                         // средне — жёлтый
-}
-
-void meteoTick() {
-  if (millis() - lastMeteo < 2000) return;
-  lastMeteo = millis();
-  float t = dht.readTemperature(), h = dht.readHumidity();
-  lcd.clear();
-  if (isnan(t) || isnan(h)) { lcd.print("Oshibka datchika"); return; }
-  lcd.print("Temp: ");  lcd.print(t, 0); lcd.print(" C");
-  lcd.setCursor(0, 1);
-  lcd.print("Vlazh: "); lcd.print(h, 0); lcd.print(" %");
+float readFine(int pin) {     // среднее из 64 измерений: шум почти исчезает, видно даже маленькое падение
+  long sum = 0;
+  for (int i = 0; i < 64; i++) sum += analogRead(pin);
+  return sum / 64.0;
 }
 
 void setup() {
   Serial.begin(9600);
-  pinMode(R, OUTPUT); pinMode(G, OUTPUT); pinMode(B, OUTPUT);
-  dht.begin();
-  if (lcd.begin(16, 2)) Serial.println("Экран не найден: проверь SDA (A4), SCL (A5), VCC и GND");
-  lcd.print("Circuit AI");
-  lcd.setCursor(0, 1);
-  lcd.print("Ekologiya");
-  calibrateNoise();
+  pinMode(IR_PIN, INPUT_PULLUP);
+  pinMode(BEAM, INPUT_PULLUP);
+  pinMode(FIRE_LED, OUTPUT);
+  pinMode(GUARD_LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+
+  // Калибровка 2 секунды
+  long irSum = 0, beamSum = 0;
+  for (int i = 0; i < 40; i++) {
+    irSum += analogRead(IR_PIN);
+    beamSum += analogRead(BEAM);
+    delay(50);
+  }
+  irBase = irSum / 40.0;
+  int beam = beamSum / 40;
+  limit = min(beam + BEAM_DELTA, 1000);
+
+  Serial.print("Пожар: обычное значение A1 = "); Serial.print(irBase, 1);
+  Serial.print(", огонь ниже "); Serial.println(irBase - FIRE_DELTA, 1);
+  Serial.print("Охрана: луч A0 = "); Serial.print(beam);
+  Serial.print(", тревога выше "); Serial.println(limit);
+  if (beam > 900) Serial.println("ВНИМАНИЕ: луч слабый. Проверь, что излучатель горит и светит прямо в фоторезистор.");
 }
 
 void loop() {
-  noiseTick();
-  meteoTick();
+  // ---------- Модуль 6: пожар ----------
+  float ir = readFine(IR_PIN);
+  if (ir < irBase - FIRE_DELTA) fireCount++;   // огонь даёт ИК-излучение — число падает
+  else { fireCount = 0; irBase = irBase * 0.997 + ir * 0.003; }   // без огня фон медленно подстраивается
+  bool fire = fireCount >= FIRE_NEED;
+  if (fire) {
+    if (millis() - lastBlink > 250) {          // сирена: мигание и два тона
+      lastBlink = millis();
+      blinkOn = !blinkOn;
+      digitalWrite(FIRE_LED, blinkOn ? HIGH : LOW);
+      tone(BUZZER, blinkOn ? 1500 : 900);
+    }
+  } else {
+    digitalWrite(FIRE_LED, LOW);
+  }
+
+  // ---------- Модуль 7: охрана ----------
+  int v = readAvg(BEAM);                       // перекрыли луч — число растёт
+  if (!blocked && v > limit) {
+    blocked = true;
+    passes++;
+    guardUntil = millis() + 1500;
+    Serial.print("Охрана: проход! Всего: "); Serial.println(passes);
+    if (!fire) tone(BUZZER, 2000, 300);
+  }
+  if (blocked && v < limit - 40) blocked = false;
+  digitalWrite(GUARD_LED, millis() < guardUntil ? HIGH : LOW);
+
+  if (!fire && millis() > guardUntil) noTone(BUZZER);
+
+  // Раз в секунду — числа в монитор порта (для проверки и защиты)
+  if (millis() - lastPrint > 1000) {
+    lastPrint = millis();
+    Serial.print("A1 (ИК) = "); Serial.print(ir, 1);
+    Serial.print(" (фон "); Serial.print(irBase, 1); Serial.print(")");
+    Serial.print(fire ? "  ПОЖАР!" : "  норма");
+    Serial.print(" | A0 (луч) = "); Serial.println(v);
+  }
+  delay(20);
 }

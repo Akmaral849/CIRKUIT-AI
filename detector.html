@@ -14,6 +14,17 @@
       border: 1px solid rgba(120, 100, 200, .25); border-radius: 12px; background: #fff; cursor: pointer; font: inherit; font-size: 12px; }
     .demo-item:hover { border-color: rgba(120, 100, 200, .7); }
     .demo-item img { width: 100px; height: 66px; object-fit: cover; border-radius: 8px; }
+    /* своя нейросеть: живой вердикт поверх камеры */
+    .nn-live { position: absolute; top: 14px; right: 14px; z-index: 4; padding: 8px 14px; border-radius: 999px;
+      font-weight: 800; font-size: 16px; color: #fff; background: rgba(15, 10, 36, .75); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+    .nn-live.ok { background: #0E9F6E; } .nn-live.bad { background: #E11D48; } .nn-live.warn { background: #D97706; }
+    .nn-status { display: block; margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
+    .nn-status.ok { color: #0E7A55; } .nn-status.bad { color: #B91C3C; }
+    .nn-bar { display: grid; grid-template-columns: 150px 1fr 48px; align-items: center; gap: 8px; font-size: 13px; margin: 4px 0; }
+    .nn-bar-track { height: 10px; border-radius: 6px; background: rgba(120, 100, 200, .15); overflow: hidden; }
+    .nn-bar-fill { display: block; height: 100%; background: #E11D48; border-radius: 6px; }
+    .nn-bar-fill.ok { background: #0E9F6E; }
+    .nn-bar-pct { text-align: right; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -32,7 +43,8 @@
       <div>
         <span class="eyebrow">ИИ-дефектоскоп</span>
         <h1 style="font-size: clamp(28px, 4vw, 44px); margin-top: 14px;">Проверка схемы <span class="grad-text">по фото</span></h1>
-        <p class="lead">Выбери модуль, наведи камеру на собранную схему и нажми «Проверить».</p>
+        <p class="lead">Выбери модуль и наведи камеру на собранную схему: своя нейросеть Circuit AI сразу пишет «правильно» или какая ошибка.</p>
+        <span class="nn-status" id="nnStatus" aria-live="polite"></span>
       </div>
     </div>
 
@@ -42,6 +54,7 @@
       <section class="card det-work" aria-label="Рабочая область">
         <div class="viewer" id="viewer">
           <span class="live-badge">Живая камера</span>
+          <span class="nn-live" id="nnLive" hidden aria-live="polite"></span>
           <video id="video" playsinline muted hidden></video>
           <div class="still" id="still" hidden>
             <img id="stillImg" alt="Снимок схемы">
@@ -60,6 +73,7 @@
           <button class="btn btn-lg" id="checkBtn" type="button" disabled>Проверить схему</button>
           <button class="btn btn-ghost" id="liveBtn" type="button" hidden>Снова камера</button>
           <button class="btn btn-ghost" id="uploadBtn" type="button">Загрузить фото</button>
+          <button class="btn btn-ghost" id="geminiBtn" type="button" disabled title="Нужен интернет и сервер">Подробная проверка Gemini</button>
           <input type="file" id="fileInput" accept="image/*" hidden>
           <span class="time" id="timeInfo" aria-live="polite"></span>
         </div>
@@ -86,10 +100,9 @@
           <h3 style="margin-bottom: 14px;">Этапы проверки</h3>
           <ol class="stages" id="stages">
             <li>Снимок готов</li>
-            <li>Отправка на сервер</li>
-            <li>ИИ отвечает на вопросы по фото</li>
-            <li>Сервер проверяет доказательства</li>
+            <li>Нейросеть смотрит на схему</li>
             <li>Итог готов</li>
+            <li>Тьютор объясняет</li>
           </ol>
         </section>
         <section class="card" id="resultCard" hidden aria-live="polite">
@@ -103,10 +116,13 @@
     </div>
   </main>
 
+  <!-- Нейросеть в браузере: сначала файл из папки lib (работает без интернета), если его нет — из интернета -->
+  <script src="lib/tf.min.js"></script>
+  <script>if (!window.tf) document.write('<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js"><\/script>');</script>
   <script src="modules-data.js"></script>
   <script src="tutors.js"></script>
   <script src="tutor-widget.js"></script>
-  <script src="detector.js?v=17-11"></script>
+  <script src="detector.js?v=18-11"></script>
   <script src="script.js"></script>
 </body>
 </html>

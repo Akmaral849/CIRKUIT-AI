@@ -257,7 +257,8 @@
       if (data.status === 'no_circuit') { key = 'nocircuit'; emo = 'alert'; }
       else if (data.errors && data.errors.length) { key = 'error'; emo = 'alert'; }
       else if (data.status === 'unclear') { key = 'unclear'; emo = 'think'; }
-      const line = tutor.lines[key];
+      // Своя нейросеть присылает готовое объяснение ошибки — тьютор говорит его голосом
+      const line = tutor.lines[key] + (data.speech ? ' ' + data.speech : '');
       root.classList.add('pulse');
       setTimeout(function () { root.classList.remove('pulse'); }, 1200);
       setEmotion(emo, 7000);
