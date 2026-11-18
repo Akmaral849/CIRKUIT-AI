@@ -1,6 +1,7 @@
 // Плата 1 «Транспорт»: модуль 1 (умный перекрёсток) + модуль 2 (умная парковка) вместе.
 // Перекрёсток: светодиоды 4, 5, 6, кнопка 2, зуммер 8.
 // Парковка: HC-SR04 Trig 9, Echo 10, сервопривод 3.
+// Версия 18.11: раз в 0,5 с плата отправляет сайту строку CAI|... с измерениями (самодиагностика по USB).
 #include <Servo.h>
 
 // ---------- Модуль 1 ----------
@@ -22,15 +23,35 @@ bool isOpen = false;
 unsigned long lastSeen = 0;
 unsigned long lastMeasure = 0;
 
+// ---------- Самодиагностика ----------
+long lastCm = -1;        // последнее расстояние, -1 — датчик не ответил
+int missCount = 0;       // сколько измерений подряд датчик молчит
+bool btnSeen = false;    // кнопку нажимали с прошлого отчёта
+unsigned long lastReport = 0;
+
 long distanceCm() {
   digitalWrite(TRIG, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG, LOW);
-  long t = pulseIn(ECHO, HIGH, 30000);
-  if (t == 0) return 999;
-  return t / 58;
+  // 45 мс: даже когда впереди пусто, исправный HC-SR04 отвечает импульсом ~38 мс.
+  // 0 значит, что датчик вообще не ответил (нет провода, перепутаны Trig/Echo, нет питания).
+  long t = pulseIn(ECHO, HIGH, 45000);
+  if (t == 0) { missCount++; lastCm = -1; return 999; }
+  missCount = 0;
+  lastCm = t / 58;
+  return lastCm;
+}
+
+void report() {
+  if (millis() - lastReport < 500) return;
+  lastReport = millis();
+  Serial.print("CAI|b=1|btn="); Serial.print(btnSeen ? 1 : 0);
+  Serial.print("|cm="); Serial.print(lastCm);
+  Serial.print("|miss="); Serial.print(missCount);
+  Serial.print("|open="); Serial.println(isOpen ? 1 : 0);
+  btnSeen = false;
 }
 
 // Парковка проверяется раз в 60 мс, пока перекрёсток ждёт
@@ -47,20 +68,20 @@ void parkingTick() {
 
   if (nearCount >= NEED) {
     lastSeen = millis();
-    if (!isOpen) { barrier.write(90); isOpen = true; Serial.println("Парковка: шлагбаум поднят"); }
+    if (!isOpen) { barrier.write(90); isOpen = true; }
   } else if (isOpen && farCount >= NEED && millis() - lastSeen > HOLD) {
     barrier.write(0);
     isOpen = false;
-    Serial.println("Парковка: шлагбаум опущен");
   }
 }
 
-// Ждём нужное время: следим за кнопкой и обслуживаем парковку
+// Ждём нужное время: следим за кнопкой, обслуживаем парковку и отчитываемся сайту
 void waitAndWatch(unsigned long ms) {
   unsigned long start = millis();
   while (millis() - start < ms) {
-    if (digitalRead(BUTTON) == LOW) pedestrian = true;
+    if (digitalRead(BUTTON) == LOW) { pedestrian = true; btnSeen = true; }
     parkingTick();
+    report();
     delay(5);
   }
 }
@@ -92,7 +113,6 @@ void loop() {
   light(HIGH, LOW, LOW);   // машинам красный
 
   if (pedestrian) {
-    Serial.println("Перекрёсток: пешеход переходит");
     for (int i = 0; i < 10; i++) {
       tone(BUZZER, 1000, 150);
       waitAndWatch(500);

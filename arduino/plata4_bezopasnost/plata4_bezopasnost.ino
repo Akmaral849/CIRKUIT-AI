@@ -5,6 +5,7 @@
 //         фоторезистор — A0 (встроенная подтяжка, вторая ножка к GND),
 //         зелёный светодиод тревоги — пин 6, звук — тот же зуммер.
 // После включения 2 секунды идёт калибровка: не подносить огонь и не перекрывать луч.
+// Версия 18.11: раз в 0,5 с плата отправляет сайту строку CAI|... (самодиагностика по USB).
 
 const int IR_PIN = A1;
 const int FIRE_LED = 5;
@@ -12,7 +13,7 @@ const int BUZZER = 8;
 const int BEAM = A0;
 const int GUARD_LED = 6;
 
-const int FIRE_DELTA = 3;    // на сколько должно УПАСТЬ число на A1 (среднее из 64), чтобы считать «огонь»
+const int FIRE_DELTA = 30;   // на сколько должно УПАСТЬ число на A1 (среднее из 64), чтобы считать «огонь»
 const int FIRE_NEED = 3;     // столько измерений подряд должно показать огонь — защита от случайных скачков
 const int BEAM_DELTA = 100;  // насколько должно вырасти число на A0, когда луч перекрыт
 
@@ -23,8 +24,9 @@ bool blocked = false;
 int passes = 0;
 unsigned long guardUntil = 0;
 unsigned long lastBlink = 0;
-unsigned long lastPrint = 0;
+unsigned long lastReport = 0;
 bool blinkOn = false;
+bool fireSeen = false;       // огонь был с прошлого отчёта
 
 int readAvg(int pin) {        // среднее из 5 измерений, чтобы убрать дрожание
   long sum = 0;
@@ -56,12 +58,6 @@ void setup() {
   irBase = irSum / 40.0;
   int beam = beamSum / 40;
   limit = min(beam + BEAM_DELTA, 1000);
-
-  Serial.print("Пожар: обычное значение A1 = "); Serial.print(irBase, 1);
-  Serial.print(", огонь ниже "); Serial.println(irBase - FIRE_DELTA, 1);
-  Serial.print("Охрана: луч A0 = "); Serial.print(beam);
-  Serial.print(", тревога выше "); Serial.println(limit);
-  if (beam > 900) Serial.println("ВНИМАНИЕ: луч слабый. Проверь, что излучатель горит и светит прямо в фоторезистор.");
 }
 
 void loop() {
@@ -71,6 +67,7 @@ void loop() {
   else { fireCount = 0; irBase = irBase * 0.997 + ir * 0.003; }   // без огня фон медленно подстраивается
   bool fire = fireCount >= FIRE_NEED;
   if (fire) {
+    fireSeen = true;
     if (millis() - lastBlink > 250) {          // сирена: мигание и два тона
       lastBlink = millis();
       blinkOn = !blinkOn;
@@ -87,7 +84,6 @@ void loop() {
     blocked = true;
     passes++;
     guardUntil = millis() + 1500;
-    Serial.print("Охрана: проход! Всего: "); Serial.println(passes);
     if (!fire) tone(BUZZER, 2000, 300);
   }
   if (blocked && v < limit - 40) blocked = false;
@@ -95,13 +91,16 @@ void loop() {
 
   if (!fire && millis() > guardUntil) noTone(BUZZER);
 
-  // Раз в секунду — числа в монитор порта (для проверки и защиты)
-  if (millis() - lastPrint > 1000) {
-    lastPrint = millis();
-    Serial.print("A1 (ИК) = "); Serial.print(ir, 1);
-    Serial.print(" (фон "); Serial.print(irBase, 1); Serial.print(")");
-    Serial.print(fire ? "  ПОЖАР!" : "  норма");
-    Serial.print(" | A0 (луч) = "); Serial.println(v);
+  // ---------- Отчёт сайту ----------
+  if (millis() - lastReport > 500) {
+    lastReport = millis();
+    Serial.print("CAI|b=4|a1="); Serial.print(ir, 0);
+    Serial.print("|base="); Serial.print(irBase, 0);
+    Serial.print("|fire="); Serial.print(fireSeen ? 1 : 0);
+    Serial.print("|a0="); Serial.print(v);
+    Serial.print("|lim="); Serial.print(limit);
+    Serial.print("|passes="); Serial.println(passes);
+    fireSeen = false;
   }
   delay(20);
 }

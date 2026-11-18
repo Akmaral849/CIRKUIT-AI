@@ -115,12 +115,29 @@
   }
 
   // Кадр → квадрат 224×224 с серыми полями (как кадры, на которых училась нейросеть) → вероятности
+  // Браузер при сильном уменьшении (1280 → 224) пропускает пиксели, и картинка «рябит».
+  // Поэтому уменьшаем по шагам, каждый раз в 2 раза — так кадр похож на кадры, на которых училась нейросеть.
+  const stepCanvas = [document.createElement('canvas'), document.createElement('canvas')];
+  function downscaled(source, w, h, tw) {
+    let src = source, cw = w, ch = h, i = 0;
+    while (cw / 2 >= tw) {
+      const c = stepCanvas[i % 2];
+      c.width = Math.round(cw / 2); c.height = Math.round(ch / 2);
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(src, 0, 0, c.width, c.height);
+      src = c; cw = c.width; ch = c.height; i++;
+    }
+    return { src: src, w: cw, h: ch };
+  }
   function predictFrom(m, source, w, h) {
     const k = 224 / Math.max(w, h);
     const dw = Math.round(w * k), dh = Math.round(h * k);
+    const small = downscaled(source, w, h, Math.max(dw, dh) === dw ? dw : Math.round(w * k));
     ctx224.fillStyle = 'rgb(128,128,128)';
     ctx224.fillRect(0, 0, 224, 224);
-    ctx224.drawImage(source, Math.round((224 - dw) / 2), Math.round((224 - dh) / 2), dw, dh);
+    ctx224.imageSmoothingEnabled = true; ctx224.imageSmoothingQuality = 'high';
+    ctx224.drawImage(small.src, 0, 0, small.w, small.h, Math.round((224 - dw) / 2), Math.round((224 - dh) / 2), dw, dh);
     return tf.tidy(function () {
       const x = tf.browser.fromPixels(canvas224).toFloat().div(tf.scalar(127)).sub(tf.scalar(1)).expandDims(0);
       return Array.from(m.model.predict(x).dataSync());
@@ -161,7 +178,7 @@
   // Телефон стоит неподвижно. Эталон снимается ~2,5 с: для каждой точки запоминаем
   // диапазон яркости (мигание светодиодов и шум камеры попадают в допуск).
   // Потом каждый кадр сравнивается с этим диапазоном, изменённые участки обводятся рамкой.
-  const CW = 320, CELL = 10, DIFF_T = 22, CELL_FRAC = 0.10, STABLE = 3;
+  const CW = 480, CELL = 10, DIFF_T = 22, CELL_FRAC = 0.08, STABLE = 4, MIN_PX = 15, EDGE = 0.07, SEARCH = 9;
   const cmp = { lo: null, hi: null, mean: 0, w: 0, h: 0, capturing: false, persist: null, boxes: [], moved: false, cells: 0 };
   const cmpCanvas = document.createElement('canvas');
   const cmpCtx = cmpCanvas.getContext('2d', { willReadFrequently: true });
@@ -190,7 +207,7 @@
     const d = cmpCtx.getImageData(0, 0, w, h).data;
     let g = new Float32Array(w * h), sum = 0;
     for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
-    g = blur3(blur3(g, w, h), w, h);
+    g = blur3(g, w, h);
     for (let i = 0; i < g.length; i++) sum += g[i];
     return { g: g, w: w, h: h, mean: sum / g.length };
   }
@@ -236,6 +253,8 @@
       cmp.lo = spread(lo, w, h, false);
       cmp.hi = spread(hi, w, h, true);
       cmp.mean = f0.mean; cmp.w = w; cmp.h = h;
+      cmp.mid = new Float32Array(w * h);
+      for (let i = 0; i < cmp.mid.length; i++) cmp.mid[i] = (lo[i] + hi[i]) / 2;
       cmp.persist = new Uint8Array(Math.ceil(w / CELL) * Math.ceil(h / CELL));
       cmp.capturing = false;
       $('refBtn').textContent = 'Запомнить заново';
@@ -248,20 +267,50 @@
     const f = grabGray(video, video.videoWidth, video.videoHeight);
     if (f.w !== cmp.w || f.h !== cmp.h) { cmp.lo = null; return; }
     const w = f.w, h = f.h, k = cmp.mean / (f.mean || 1);
+    // Телефон мог чуть сдвинуться: ищем сдвиг кадра (до ±6 пикселей), при котором он лучше всего совпадает с эталоном
+    let bx = 0, by = 0, best = Infinity;
+    for (let sy = -SEARCH; sy <= SEARCH; sy += 2) {
+      for (let sx = -SEARCH; sx <= SEARCH; sx += 2) {
+        let e = 0, n = 0;
+        for (let y = SEARCH; y < h - SEARCH; y += 3) {
+          for (let x = SEARCH; x < w - SEARCH; x += 3) { e += Math.abs(f.g[y * w + x] * k - cmp.mid[(y + sy) * w + x + sx]); n++; }
+        }
+        e /= n;
+        if (e < best) { best = e; bx = sx; by = sy; }
+      }
+    }
+    const cx = bx, cy = by;
+    for (let sy = cy - 1; sy <= cy + 1; sy++) {
+      for (let sx = cx - 1; sx <= cx + 1; sx++) {
+        if ((sx === cx && sy === cy) || Math.abs(sx) > SEARCH || Math.abs(sy) > SEARCH) continue;
+        let e = 0, n = 0;
+        for (let y = SEARCH; y < h - SEARCH; y += 3) {
+          for (let x = SEARCH; x < w - SEARCH; x += 3) { e += Math.abs(f.g[y * w + x] * k - cmp.mid[(y + sy) * w + x + sx]); n++; }
+        }
+        e /= n;
+        if (e < best) { best = e; bx = sx; by = sy; }
+      }
+    }
     const gw = Math.ceil(w / CELL), gh = Math.ceil(h / CELL);
     const cnt = new Uint16Array(gw * gh), tot = new Uint16Array(gw * gh);
     for (let y = 0; y < h; y++) {
+      const ry = y + by; if (ry < 0 || ry >= h) continue;
       for (let x = 0; x < w; x++) {
-        const i = y * w + x, v = f.g[i] * k;
-        const d = v < cmp.lo[i] ? cmp.lo[i] - v : (v > cmp.hi[i] ? v - cmp.hi[i] : 0);
+        const rx = x + bx; if (rx < 0 || rx >= w) continue;
+        const i = y * w + x, j = ry * w + rx, v = f.g[i] * k;
+        const d = v < cmp.lo[j] ? cmp.lo[j] - v : (v > cmp.hi[j] ? v - cmp.hi[j] : 0);
         const c = ((y / CELL) | 0) * gw + ((x / CELL) | 0);
         tot[c]++;
         if (d > DIFF_T) cnt[c]++;
       }
     }
+    // края кадра не учитываем: там больше всего ложных отличий от наклона телефона
+    const ex = Math.ceil(gw * EDGE), ey = Math.ceil(gh * EDGE);
     let stable = 0;
     for (let c = 0; c < cnt.length; c++) {
-      if (cnt[c] / tot[c] > CELL_FRAC) cmp.persist[c] = Math.min(255, cmp.persist[c] + 1);
+      const ccx = c % gw, ccy = (c / gw) | 0;
+      const edge = ccx < ex || ccy < ey || ccx >= gw - ex || ccy >= gh - ey;
+      if (!edge && tot[c] && cnt[c] / tot[c] > CELL_FRAC) cmp.persist[c] = Math.min(255, cmp.persist[c] + 1);
       else cmp.persist[c] = 0;
       if (cmp.persist[c] >= STABLE) stable++;
     }
@@ -283,7 +332,7 @@
           if (!seen[v2] && cmp.persist[v2] >= STABLE) { seen[v2] = 1; q.push(v2); }
         });
       }
-      if (px < 15) continue;
+      if (px < MIN_PX) continue;
       boxes.push({ px: px, box: [
         Math.max(0, (y0 - 0.5) * CELL / h * 1000), Math.max(0, (x0 - 0.5) * CELL / w * 1000),
         Math.min(1000, (y1 + 1.5) * CELL / h * 1000), Math.min(1000, (x1 + 1.5) * CELL / w * 1000)] });
@@ -372,7 +421,7 @@
   }
 
   // ---------- Режим: сравнение с эталоном / нейросеть ----------
-  let mode = load('circuitai-mode', 'cmp');
+  let mode = 'nn';   // сравнение с эталоном отключено: с телефоном в руке оно давало ложные рамки
   function applyMode() {
     document.querySelectorAll('#modePick .chip').forEach(function (c) { c.setAttribute('aria-pressed', String(c.dataset.mode === mode)); });
     $('refBtn').hidden = !(mode === 'cmp' && stream);
@@ -384,7 +433,7 @@
     nn.avg = null;
   }
   document.querySelectorAll('#modePick .chip').forEach(function (c) {
-    c.addEventListener('click', function () { mode = c.dataset.mode; save('circuitai-mode', mode); applyMode(); });
+    c.addEventListener('click', function () { mode = c.dataset.mode; save('circuitai-mode2', mode); applyMode(); });
   });
 
   // ---------- Камера ----------
@@ -842,7 +891,9 @@
   checkBtn.addEventListener('click', function () {
     if (stream && !still.hidden) { showLive(); return; }
     checkBtn.disabled = true;
-    if (mode === 'cmp') runCmpCheck(); else runNnCheck();
+    // Живая камера + режим сравнения → сравнение с эталоном.
+    // Готовое или загруженное фото (камеры нет) → своя нейросеть, без лишних вопросов.
+    if (mode === 'cmp' && stream && !video.hidden) runCmpCheck(); else runNnCheck();
   });
   $('refBtn').addEventListener('click', function () {
     if (stream && !still.hidden) showLive();
