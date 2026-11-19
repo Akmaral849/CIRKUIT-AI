@@ -7,7 +7,7 @@
   <title>Модуль — Circuit AI</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="pages.css">
-  <link rel="stylesheet" href="module.css">
+  <link rel="stylesheet" href="module.css?v=19">
 </head>
 <body>
   <header class="topbar"><div class="wrap">
@@ -22,7 +22,7 @@
 
   <main class="wrap" id="page"></main>
 
-  <script src="modules-data.js"></script>
+  <script src="modules-data.js?v=19b"></script>
   <script>
     // Какой модуль открыт: module.html?id=2. Тьютор узнаёт его через CIRCUIT_MODULE.
     const moduleId = Number(new URLSearchParams(location.search).get('id')) || 1;
@@ -59,9 +59,18 @@
       how: Array.isArray(m.how) ? '<ol class="how-steps">' + m.how.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' : '<p>' + esc(m.how) + '</p>',
       mistakes: '<ul class="mistakes">' + m.mistakes.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>',
       quiz: '<div class="quiz">' + m.quiz.map(function (q) { return '<details><summary>' + esc(q.q) + '</summary><p>' + esc(q.a) + '</p></details>'; }).join('') + '</div>',
-      video: m.video
-        ? '<div class="video-wrap"><iframe src="https://www.youtube.com/embed/' + esc(m.video) + '" title="Видеоурок" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>'
-        : '<div class="video-box">Видеоурок скоро появится</div>'
+      video: (function () {
+        const list = (Array.isArray(m.video) ? m.video : (m.video ? [m.video] : [])).map(function (v) {
+          // принимаем и id, и полную ссылку YouTube
+          const s = String(v).trim();
+          const r = s.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+          return r ? r[1] : s;
+        });
+        if (!list.length) return '<div class="video-box">Видеоурок скоро появится</div>';
+        return list.map(function (id) {
+          return '<div class="video-wrap"><iframe src="https://www.youtube.com/embed/' + esc(id) + '" title="Видеоурок" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>';
+        }).join('') + '<p class="video-note">Видео — для понимания, как работают детали. Подключай по нашей схеме выше: пины в видео могут отличаться.</p>';
+      })()
     };
 
     document.getElementById('page').innerHTML =

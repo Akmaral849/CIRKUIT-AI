@@ -144,6 +144,44 @@
     });
   }
 
+  // Несколько взглядов на одно фото (TTA): целиком, ближе, со сдвигами, повёрнутое.
+  // Ответы усредняются — одна случайная ошибка меньше влияет на итог.
+  const ttaCanvas = document.createElement('canvas');
+  function viewOf(source, w, h, v) {
+    const c = ttaCanvas, x = c.getContext('2d');
+    if (v.rot) {
+      c.width = h; c.height = w;
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.translate(h / 2, w / 2); x.rotate(Math.PI / 2);
+      x.drawImage(source, -w / 2, -h / 2, w, h);
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      return { src: c, w: h, h: w };
+    }
+    const sw = Math.round(w * v.k), sh = Math.round(h * v.k);
+    const sx = Math.round((w - sw) * v.fx), sy = Math.round((h - sh) * v.fy);
+    c.width = sw; c.height = sh;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+    return { src: c, w: sw, h: sh };
+  }
+  const TTA_VIEWS = [
+    { k: 1, fx: 0.5, fy: 0.5 },      // целиком
+    { k: 0.9, fx: 0.5, fy: 0.5 },    // чуть ближе
+    { k: 0.8, fx: 0.5, fy: 0.5 },    // ещё ближе
+    { k: 0.9, fx: 0, fy: 0 },        // сдвиг влево-вверх
+    { k: 0.9, fx: 1, fy: 1 },        // сдвиг вправо-вниз
+    { rot: true }                    // повёрнутое на 90° (нейросеть училась и на таких)
+  ];
+  function predictTTA(m, source, w, h) {
+    let sum = null;
+    TTA_VIEWS.forEach(function (v) {
+      const view = viewOf(source, w, h, v);
+      const p = predictFrom(m, view.src, view.w, view.h);
+      if (!sum) sum = p.slice(); else p.forEach(function (q, i) { sum[i] += q; });
+    });
+    return sum.map(function (q) { return q / TTA_VIEWS.length; });
+  }
+
   function topOf(m, probs) {
     let best = 0;
     probs.forEach(function (p, i) { if (p > probs[best]) best = i; });
@@ -156,10 +194,11 @@
     const scores = m.labels.map(function (l, i) { return { label: l, name: SHORT[l] || l, p: probs[i] }; })
       .sort(function (a, b) { return b.p - a.p; });
     const data = { source: 'nn', module: mod.id, label: top.label, confidence: top.p, scores: scores, errors: [], fixes: [], found: [], unclear: [], manual: [] };
-    if (top.p < MIN_CONF) {
+    const second = scores.length > 1 ? scores[1].p : 0;
+    if (top.p < MIN_CONF || top.p - second < 0.2) {
       data.status = 'unclear';
-      data.unclear = ['Нейросеть не уверена (' + pct + ' %). Сними плату сверху и ближе, чтобы в кадре были Arduino и вся макетная плата.'];
-      data.speech = 'Я не уверен, что вижу схему чётко. Сними плату сверху и чуть ближе.';
+      data.unclear = ['Нейросеть не уверена (' + pct + ' %, второй вариант — «' + scores[1].name + '» ' + Math.round(second * 100) + ' %). Самая точная проверка — через плату: подключи Arduino по USB (раздел вверху) и нажми «Тест». Или сними плату сверху и ближе.'];
+      data.speech = 'Я не уверен по фото. Самая точная проверка — подключи плату по USB и нажми Тест.';
     } else if (top.label === 'ok') {
       data.status = 'ok';
       data.found = ['Своя нейросеть Circuit AI: сборка совпадает с правильной (уверенность ' + pct + ' %).'];
@@ -169,6 +208,13 @@
       data.status = 'error';
       data.errors = [e[0]];
       data.fixes = [e[1]];
+      // «нет детали» и «нет резистора» на фото похожи: если второй вариант заметный — называем оба
+      const pair = { net_detali: 'net_rezistora', net_rezistora: 'net_detali' };
+      if (pair[top.label] && scores[1] && scores[1].label === pair[top.label] && scores[1].p >= 0.15) {
+        const e2 = nnError(mod.id, scores[1].label);
+        data.errors = ['Не хватает детали в цепи. Скорее всего: ' + e[0].charAt(0).toLowerCase() + e[0].slice(1) + ' Также возможно: ' + e2[0].charAt(0).toLowerCase() + e2[0].slice(1)];
+        data.fixes = [e[1], e2[1]];
+      }
       data.speech = e[0] + ' ' + e[1];
     }
     return data;
@@ -817,7 +863,7 @@
       if (liveProbs && liveProbs.length === m.labels.length) probs = liveProbs;   // среднее по живым кадрам — надёжнее одного снимка
       else {
         const img = await fileToImage(photoBlob);
-        probs = predictFrom(m, img, img.naturalWidth, img.naturalHeight);
+        probs = predictTTA(m, img, img.naturalWidth, img.naturalHeight);   // 6 взглядов на фото, ответы усреднены
       }
       const data = nnResult(m, probs);
       stage(1, 'done'); stage(2, 'done');

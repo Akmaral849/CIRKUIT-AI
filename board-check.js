@@ -106,10 +106,11 @@
     return s.b ? s : null;
   }
 
-  function say(mod, status, text, speech) {
+  function say(mod, status, text, speech, fix) {
     if (!window.Tutor) return;
     Tutor.setContext({ module: mod });
-    Tutor.react({ status: status, errors: status === 'error' ? [text] : [], source: 'board', module: mod, speech: speech });
+    // errors + fixes уходят в чат: тьютор отвечает по реальному результату платы
+    Tutor.react({ status: status, errors: status === 'error' ? [text] : [], fixes: fix ? [fix] : [], source: 'board', module: mod, speech: speech });
   }
 
   // ---------- Подключённые платы ----------
@@ -192,7 +193,7 @@
       // тьютор говорит, когда проблема держится 2 отчёта подряд, и когда её исправили
       if (res.state === 'bad') {
         st.badN = (st.badN || 0) + 1;
-        if (st.badN === 2 && !st.said) { st.said = true; say(r.mod, 'error', res.text, res.text + ' ' + (res.fix || '')); }
+        if (st.badN === 2 && !st.said) { st.said = true; say(r.mod, 'error', res.text, res.text + ' ' + (res.fix || ''), res.fix); }
       } else {
         st.badN = 0;
         if (st.said && res.state === 'ok') { st.said = false; say(r.mod, 'ok', res.text, 'Исправлено! ' + r.name + ' снова работает.'); }
@@ -215,7 +216,7 @@
         if (left > 0) { bd.rows[i].text.textContent = '👉 ' + r.test + ' (' + left + ' с)…'; return; }
         st.run = false;
         paint(bd.rows[i], 'bad', r.fail, r.fix);
-        say(r.mod, 'error', r.fail, r.fail + ' ' + r.fix);
+        say(r.mod, 'error', r.fail, r.fail + ' ' + r.fix, r.fix);
       });
     });
   }, 250);
